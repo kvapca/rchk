@@ -4,6 +4,7 @@
 #include <cxxabi.h>
 #include <vector>
 
+#include <llvm/BinaryFormat/Dwarf.h>
 #include <llvm/IR/BasicBlock.h>
 #include <llvm/IR/DebugInfo.h>
 #include <llvm/IR/Function.h>
@@ -252,6 +253,58 @@ std::string varName(const AllocaInst *var) {
   std::string name = computeVarName(var);
   cache.insert({var, name});
   return name;
+}
+
+DIType *stripQualifiers(DIType *type) {
+  if (!type) return nullptr;
+  
+  if (auto *derivedType = dyn_cast<DIDerivedType>(type)){
+    switch (derivedType->getTag()) {
+      case dwarf::DW_TAG_reference_type:
+      case dwarf::DW_TAG_const_type:
+      case dwarf::DW_TAG_volatile_type:
+      case dwarf::DW_TAG_restrict_type:
+      case dwarf::DW_TAG_atomic_type:
+      case dwarf::DW_TAG_immutable_type:
+        return stripQualifiers(derivedType->getBaseType());
+      default:
+        return type;
+    }
+  }
+  return type;
+}
+
+// SEXP is defined via typedef struct SEXPREC *SEXP;
+bool isSEXP(DIType *type) {
+  if (!type) return false;
+  type = stripQualifiers(type);
+
+  // check typedef SEXP
+  if (auto *derivedType = dyn_cast<DIDerivedType>(type)){
+    if (derivedType->getTag() != dwarf::DW_TAG_typedef) return false;
+    if (derivedType->getName() != "SEXP") return false;
+
+    type = stripQualifiers(derivedType->getBaseType());
+  }
+  else return false;
+
+  // check pointer
+  if (auto *derivedType = dyn_cast<DIDerivedType>(type)){
+    if (derivedType->getTag() != dwarf::DW_TAG_pointer_type) return false;
+    type = stripQualifiers(derivedType->getBaseType());
+  }
+  else return false;
+
+  // check SEXPREC
+  if (auto *compositeType = dyn_cast<DICompositeType>(type)) {
+    if (compositeType->getTag() == dwarf::DW_TAG_structure_type) {
+      // check for typedef struct SEXPREC and for struct SEXPREC, as both are used in R sources
+      if (compositeType->getName() == "SEXPREC" || compositeType->getName() == "struct SEXPREC") {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 bool isPointerToStruct(Type* type, std::string name) {
