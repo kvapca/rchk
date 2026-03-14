@@ -326,11 +326,11 @@ bool isSEXP(Type* type) {
   return isPointerToStruct(type, "struct.SEXPREC");
 }
 
-bool isSEXP(GlobalVariable *var) {
-  bool original = isSEXP(var->getValueType());
+bool isSEXP(GlobalVariable *gv) {
+  bool original = isSEXP(gv->getValueType());
 
   SmallVector<DIGlobalVariableExpression *> debugInfoVector;
-  var->getDebugInfo(debugInfoVector);
+  gv->getDebugInfo(debugInfoVector);
 
   for (auto debugInfo : debugInfoVector) {
     if (!debugInfo) continue;
