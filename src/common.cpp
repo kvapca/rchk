@@ -326,15 +326,26 @@ bool isSEXP(Type* type) {
   return isPointerToStruct(type, "struct.SEXPREC");
 }
 
-bool isSEXPPtr(Type* type) {
-  if (!PointerType::classof(type)) {
-    return false;
-  }
-  return isSEXP(cast<PointerType>(type)->getPointerElementType());
-}
-
 bool isSEXP(GlobalVariable *var) {
-  return isSEXPPtr(var->getType());
+  bool original = isSEXP(var->getValueType());
+
+  SmallVector<DIGlobalVariableExpression *> debugInfoVector;
+  var->getDebugInfo(debugInfoVector);
+
+  for (auto debugInfo : debugInfoVector) {
+    if (!debugInfo) continue;
+    DIGlobalVariable *variable = debugInfo->getVariable();
+
+    if (!variable) continue;
+    DIType *type = variable->getType();
+    
+    if (isSEXP(type)) {
+      assert(original);
+      return true;
+    }
+  }
+  assert(!original);
+  return false;
 }
 
 bool isSEXP(AllocaInst* var) {
