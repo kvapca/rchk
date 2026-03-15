@@ -348,8 +348,10 @@ bool isGEPSourceSEXP(GetElementPtrInst* gep) {
 
 // check in getTypeArray on index functionTypeIndex; index 0 is return type, so for argument i, check index i+1
 bool isFunctionSEXP(Function *fun, int functionTypeIndex) {
+  if (!fun) return false;
+
   if (DISubprogram *sp = fun->getSubprogram()) {
-    auto *srt = sp->getType();
+    DISubroutineType *srt = sp->getType();
     if (functionTypeIndex < 0 || functionTypeIndex>= srt->getTypeArray().size()) {
       return false;
     }
@@ -363,6 +365,7 @@ bool isFunctionSEXP(Function *fun, int functionTypeIndex) {
 }
 
 bool isFunctionReturningSEXP(Function *fun) {
+  if (!fun) return false;
   bool original = isSEXP(fun->getReturnType());
   bool current = isFunctionSEXP(fun, 0); // 0 is the return type index
 
@@ -371,6 +374,10 @@ bool isFunctionReturningSEXP(Function *fun) {
 }
 
 bool isFunctionArgSEXP(Function *fun, int paramIndex) {
+  if (!fun) return false;
+  if (paramIndex < 0 || paramIndex >= fun->arg_size()) {
+    return false;
+  }
   bool original = isSEXP(fun->getFunctionType()->getParamType(paramIndex));
   bool current = isFunctionSEXP(fun, paramIndex + 1); // +1 because of return type at index 0
 
@@ -379,6 +386,7 @@ bool isFunctionArgSEXP(Function *fun, int paramIndex) {
 }
 
 bool isArgumentSEXP(Argument *arg) {
+  if (!arg) return false;
   bool original = isSEXP(arg->getType());
 
   auto *function = arg->getParent();
@@ -396,6 +404,8 @@ bool isArgumentSEXP(Argument *arg) {
 }
 
 bool isSEXP(GlobalVariable *gv) {
+  if (!gv) return false;
+
   bool original = isSEXP(gv->getValueType());
 
   SmallVector<DIGlobalVariableExpression *> debugInfoVector;
