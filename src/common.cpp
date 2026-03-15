@@ -326,6 +326,26 @@ bool isSEXP(Type* type) {
   return isPointerToStruct(type, "struct.SEXPREC");
 }
 
+bool isSEXPRECStruct(Type* pointee) {
+  if (auto *estr = dyn_cast<StructType>(pointee)) {
+    return estr->hasName() && estr->getName().str() == "struct.SEXPREC";
+  }
+  return false;
+}
+
+// check if GEP source is SEXP
+bool isGEPSourceSEXP(GetElementPtrInst* gep) {
+  if (!gep) return false;
+
+  bool original = isSEXP(gep->getPointerOperandType());
+  if (isSEXPRECStruct(gep->getSourceElementType())) {
+    assert(original);
+    return true;
+  }
+  assert(!original);
+  return false;
+}
+
 // check in getTypeArray on index functionTypeIndex; index 0 is return type, so for argument i, check index i+1
 bool isFunctionSEXP(Function *fun, int functionTypeIndex) {
   if (DISubprogram *sp = fun->getSubprogram()) {
