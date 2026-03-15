@@ -326,6 +326,55 @@ bool isSEXP(Type* type) {
   return isPointerToStruct(type, "struct.SEXPREC");
 }
 
+// check in getTypeArray on index functionTypeIndex; index 0 is return type, so for argument i, check index i+1
+bool isFunctionSEXP(Function *fun, int functionTypeIndex) {
+  if (DISubprogram *sp = fun->getSubprogram()) {
+    auto *srt = sp->getType();
+    if (functionTypeIndex < 0 || functionTypeIndex>= srt->getTypeArray().size()) {
+      return false;
+    }
+    auto *functionType = srt->getTypeArray()[functionTypeIndex];
+
+    if (isSEXP(functionType)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool isFunctionReturningSEXP(Function *fun) {
+  bool original = isSEXP(fun->getReturnType());
+  bool current = isFunctionSEXP(fun, 0); // 0 is the return type index
+
+  assert(current == original);
+  return current;
+}
+
+bool isFunctionArgSEXP(Function *fun, int paramIndex) {
+  bool original = isSEXP(fun->getFunctionType()->getParamType(paramIndex));
+  bool current = isFunctionSEXP(fun, paramIndex + 1); // +1 because of return type at index 0
+
+  assert(current == original);
+  return current;
+}
+
+bool isArgumentSEXP(Argument *arg) {
+  bool original = isSEXP(arg->getType());
+
+  auto *function = arg->getParent();
+  // argIndex is 0-based index of the argument in the functions IR signature which may or may not include return type (sret flag)
+  // we check against the debug info, which by convention has the return type at index 0
+  auto argIndex = arg->getArgNo();
+  // when sret is not set, IR doesn't have return type in the signature for which we need to adjust
+  if (!function->hasStructRetAttr()) {
+    argIndex += 1;
+  }
+
+  bool current = isFunctionSEXP(function, argIndex);
+  assert(current == original);
+  return current;
+}
+
 bool isSEXP(GlobalVariable *gv) {
   bool original = isSEXP(gv->getValueType());
 
