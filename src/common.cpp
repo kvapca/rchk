@@ -346,7 +346,7 @@ bool isGEPSourceSEXP(GetElementPtrInst* gep) {
   return false;
 }
 
-// check in getTypeArray on index functionTypeIndex; index 0 is return type, so for argument i, check index i+1
+// check type array in DI on index functionTypeIndex: index 0 is return type, argument i has index i+1
 bool isFunctionSEXP(Function *fun, int functionTypeIndex) {
   if (!fun) return false;
 
@@ -373,13 +373,19 @@ bool isFunctionReturningSEXP(Function *fun) {
   return current;
 }
 
-bool isFunctionArgSEXP(Function *fun, int paramIndex) {
+// expect argIndex in IR numbering, which includes return type when sret present
+bool isFunctionArgSEXP(Function *fun, int argIndex) {
   if (!fun) return false;
-  if (paramIndex < 0 || paramIndex >= fun->arg_size()) {
+  if (argIndex < 0 || argIndex >= fun->arg_size()) {
     return false;
   }
-  bool original = isSEXP(fun->getFunctionType()->getParamType(paramIndex));
-  bool current = isFunctionSEXP(fun, paramIndex + 1); // +1 because of return type at index 0
+  bool original = isSEXP(fun->getFunctionType()->getParamType(argIndex));
+
+  // when sret is not set, IR doesn't have return type in the signature so DI types are shifted by 1
+  if (!fun->hasStructRetAttr()) {
+    argIndex += 1;
+  }
+  bool current = isFunctionSEXP(fun, argIndex);
 
   assert(current == original);
   return current;
@@ -389,16 +395,10 @@ bool isArgumentSEXP(Argument *arg) {
   if (!arg) return false;
   bool original = isSEXP(arg->getType());
 
-  auto *function = arg->getParent();
-  // argIndex is 0-based index of the argument in the functions IR signature which may or may not include return type (sret flag)
-  // we check against the debug info, which by convention has the return type at index 0
+  auto *fun = arg->getParent();
   auto argIndex = arg->getArgNo();
-  // when sret is not set, IR doesn't have return type in the signature for which we need to adjust
-  if (!function->hasStructRetAttr()) {
-    argIndex += 1;
-  }
 
-  bool current = isFunctionSEXP(function, argIndex);
+  bool current = isFunctionArgSEXP(fun, argIndex);
   assert(current == original);
   return current;
 }
