@@ -531,9 +531,34 @@ bool traverseToSEXP(Value* start, int depth) {
   }
   return result;
 }
+
+bool isSEXP(AllocaInst* ai) {
+  if (!ai) return false;
+  if (ai->isArrayAllocation() /* need to check this? */) {
     return false;
   }
-  return isSEXP(var->getAllocatedType());
+  bool original = isSEXP(ai->getAllocatedType());
+  return original;
+
+  SmallVector<DbgVariableIntrinsic *, 32> variablesVector;
+  findDbgUsers(variablesVector, ai); // with -O0 returns only dbg.declare
+
+  for (auto *variable : variablesVector) {
+    if (!variable) continue;
+    DILocalVariable *localVariable = variable->getVariable();
+
+    if (!localVariable) continue;
+    DIType *type = localVariable->getType();
+
+    if (isSEXP(type)) {
+      assert(original);
+      return true;
+    }
+  }
+  // alloca is pointer to allocated type -> check for SEXP* -> set depth to 1
+  bool traverseVal = traverseToSEXP(ai, 1);
+  assert(traverseVal == original);
+  return traverseVal;
 }
 
 bool isInstall(Function *f) {
