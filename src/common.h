@@ -109,7 +109,6 @@ struct GlobalsTy {
 bool isGEPSourceSEXP(GetElementPtrInst *gep);
 bool isFunctionRetSEXP(Function *fun);
 bool isFunctionArgSEXP(Function *fun, int argIndex);
-bool isSEXP(DIType *type);
 bool isSEXP(Argument *arg);
 bool isSEXP(GlobalVariable *gv);
 bool isSEXP(AllocaInst* ai);
