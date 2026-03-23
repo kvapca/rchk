@@ -474,15 +474,15 @@ bool traverseToSEXP(Value* start, int depth) {
       if (auto *gep = dyn_cast<GetElementPtrInst>(user)){
         if (currDepth == 0 && gep->getPointerOperand() == curr && isGEPSourceSEXP(gep)) {
           if (TRVS_DBG) errs() << "Found SEXP source in GEP: " << *gep << "\n";
-          result = isGEPSourceSEXP(gep);
+          result = true;
           ended = true;
           break;
         }
       }
       else if (auto *ret = dyn_cast<ReturnInst>(user)) {
-        if (currDepth == 0 && isFunctionReturningSEXP(ret->getFunction())) {
+        if (currDepth == 0 && isFunctionRetSEXP(ret->getFunction())) {
           if (TRVS_DBG) errs() << "Found SEXP return in function: " << funName(ret->getFunction()) << "\n";
-          result = isFunctionReturningSEXP(ret->getFunction());
+          result = true;
           ended = true;
           break;
         }
@@ -492,7 +492,7 @@ bool traverseToSEXP(Value* start, int depth) {
           int argIndex = ci->getArgOperandNo(&use);
           if (currDepth == 0 && isFunctionArgSEXP(ci->getCalledFunction(), argIndex)) {
             if (TRVS_DBG) errs() << "Found SEXP argument in call: " << *ci << "\n";
-            result = isFunctionArgSEXP(ci->getCalledFunction(), argIndex);
+            result = true;
             ended = true;
             break;
           }
