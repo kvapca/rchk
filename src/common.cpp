@@ -399,6 +399,66 @@ bool isFunctionRetSEXP(Function *fun) {
   return current;
 }
 
+// finds IR argument corresponding to the DI variable
+Argument* getArgFromDebugVar(DbgVariableIntrinsic *DVI) {
+  if (!DVI) return nullptr;
+
+  auto *var = DVI->getVariable();
+  if (!var) return nullptr;
+
+  // first try the direct case: argument directly in DVI
+  auto *arg = dyn_cast<Argument>(DVI->getVariableLocationOp(0));
+  if (arg) return arg;
+
+  // if not there are two ways
+  if (auto *alloca = dyn_cast<AllocaInst>(DVI->getVariableLocationOp(0))) {
+    for (auto *user : alloca->users()) {
+      // direct: store alloca -> store (for non-coerced structs)
+      if (auto *store = dyn_cast<StoreInst>(user)) {
+        arg = dyn_cast<Argument>(store->getValueOperand());
+        if (arg) break;
+      }
+      // via GEP: alloca -> GEP -> store (for coerced structs)
+      if (auto *gep = dyn_cast<GetElementPtrInst>(user)) {
+        for (auto *gepUser : gep->users()) {
+            if (auto *store = dyn_cast<StoreInst>(gepUser)) {
+                arg = dyn_cast<Argument>(store->getValueOperand());
+                if (arg) break;
+            }
+        }
+        if (arg) break;
+      }
+    }
+  }
+  return arg;
+}
+
+// build map from IR function type index to DI type index for given function
+typedef std::map<unsigned, unsigned> IRToDIIndexMapTy;
+IRToDIIndexMapTy buildIRToDIIndexMap(Function *fun) {
+  IRToDIIndexMapTy map;
+
+  // iterate over instructions in function
+  for (auto &inst : instructions(fun)) {
+
+    // look for DbgDeclareInst and DbgValueInst, which have variable and type info; there will be only dbg.declare with -O0
+    auto *DVI = dyn_cast<DbgVariableIntrinsic>(&inst);
+    if (!DVI) continue;
+
+    auto *var = DVI->getVariable();
+    if (!var) continue;
+    
+    unsigned DIArgIndex = var->getArg();
+    if (DIArgIndex == 0) continue; // DIArgIndex == 0 means return type or local variable, we are only interested in arguments
+
+    Argument *arg = getArgFromDebugVar(DVI);
+    if (!arg) continue;
+
+    map[arg->getArgNo()] = DIArgIndex;
+  }
+  return map;
+}
+
 // expect argIndex in IR numbering, which includes return type when sret present
 bool isFunctionArgSEXP(Function *fun, int argIndex) {
   if (!fun) return false;
@@ -406,12 +466,14 @@ bool isFunctionArgSEXP(Function *fun, int argIndex) {
     return false;
   }
   bool original = isSEXP(fun->getFunctionType()->getParamType(argIndex));
+  bool current = false;
 
-  // when sret is not set, IR doesn't have return type in the signature so DI types are shifted by 1
-  if (!fun->hasStructRetAttr()) {
-    argIndex += 1;
+  IRToDIIndexMapTy map = buildIRToDIIndexMap(fun);
+  auto search = map.find(argIndex);
+  if (search != map.end()) {
+    unsigned DIArgIndex = search->second;
+    current = isFunctionSEXP(fun, DIArgIndex);
   }
-  bool current = isFunctionSEXP(fun, argIndex);
 
   assert(current == original);
   return current;
