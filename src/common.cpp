@@ -427,8 +427,110 @@ bool isSEXP(GlobalVariable *gv) {
   return false;
 }
 
-bool isSEXP(AllocaInst* var) {
-  if (var->isArrayAllocation() /* need to check this? */) {
+bool TRVS_DBG = false;
+typedef std::pair<Value*, int> ValueDepthPair;
+// checks whether value can be traced to SEXP
+// depth 0 checks for SEXP, depth 1 checks for SEXP*, etc.
+bool traverseToSEXP(Value* start, int depth) {
+  if (!start) return false;
+
+  static std::map<ValueDepthPair, bool> cache;
+  auto search = cache.find({start, depth});
+  if (search != cache.end()) {
+    return search->second;
+  }
+
+  std::set<ValueDepthPair> visited;
+  SmallVector<ValueDepthPair, 32> toVisit = { {start, depth} };
+  bool result = false;
+  bool ended = false;
+
+  if (TRVS_DBG) errs() << "\nStarting traverseToSEXP from value: " << *start << " with depth " << depth << "\n";
+  while (!toVisit.empty()) {
+    auto pair = toVisit.pop_back_val();
+    Value *curr = pair.first;
+    int currDepth = pair.second;
+
+    // prune non-pointer values
+    if (!curr->getType()->isPointerTy()) continue;
+
+    // check global cache
+    auto cached = cache.find({curr, currDepth});
+    if (cached != cache.end() && cached->second) {
+      result = true;
+      ended = true;
+      break;
+    }
+
+    // check local visited set
+    if (!visited.insert({curr, currDepth}).second || currDepth < 0) {
+      continue;
+    }
+    if (TRVS_DBG) errs() << "Visiting value: " << *curr << " with depth " << currDepth << "\n";
+
+    for (Use &use : curr->uses()) {
+      User *user = use.getUser();
+
+      if (auto *gep = dyn_cast<GetElementPtrInst>(user)){
+        if (currDepth == 0 && gep->getPointerOperand() == curr && isGEPSourceSEXP(gep)) {
+          if (TRVS_DBG) errs() << "Found SEXP source in GEP: " << *gep << "\n";
+          result = isGEPSourceSEXP(gep);
+          ended = true;
+          break;
+        }
+      }
+      else if (auto *ret = dyn_cast<ReturnInst>(user)) {
+        if (currDepth == 0 && isFunctionReturningSEXP(ret->getFunction())) {
+          if (TRVS_DBG) errs() << "Found SEXP return in function: " << funName(ret->getFunction()) << "\n";
+          result = isFunctionReturningSEXP(ret->getFunction());
+          ended = true;
+          break;
+        }
+      }
+      else if (auto *ci = dyn_cast<CallInst>(user)) {
+        if (ci->isArgOperand(&use)) {
+          int argIndex = ci->getArgOperandNo(&use);
+          if (currDepth == 0 && isFunctionArgSEXP(ci->getCalledFunction(), argIndex)) {
+            if (TRVS_DBG) errs() << "Found SEXP argument in call: " << *ci << "\n";
+            result = isFunctionArgSEXP(ci->getCalledFunction(), argIndex);
+            ended = true;
+            break;
+          }
+        }
+      }
+      else if (auto *phi = dyn_cast<PHINode>(user)) toVisit.push_back({phi, currDepth});
+      else if (auto *sel = dyn_cast<SelectInst>(user)) toVisit.push_back({sel, currDepth});
+      else if (auto *li = dyn_cast<LoadInst>(user)) {
+        // LoadInst dereferences pointer
+        if (currDepth > 0) toVisit.push_back({li, currDepth - 1});
+      }
+      else if (auto *si = dyn_cast<StoreInst>(user)) {
+        // curr is being stored into some pointer — follow that pointer at depth+1
+        if (si->getValueOperand() == curr){
+          toVisit.push_back({si->getPointerOperand(), currDepth + 1});
+        }
+        // curr is a pointer being stored into — follow the value at depth-1
+        else if (si->getPointerOperand() == curr && currDepth > 0){
+          toVisit.push_back({si->getValueOperand(), currDepth - 1});
+        }
+      }
+      else {
+        // bitcasts are ignored as previous analysis didn't do any traversals so handling them may change (improve?) results
+        if (TRVS_DBG) {
+          errs() << "Unhandled instruction type in traverseToSEXP: ";
+          user->print(errs());
+          errs() << "\n";
+        }
+      }
+    }
+    if (ended) break;
+  }
+
+  for (const auto& pair : visited) {
+    cache[pair] = result;
+  }
+  return result;
+}
     return false;
   }
   return isSEXP(var->getAllocatedType());
