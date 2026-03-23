@@ -339,7 +339,7 @@ static bool isTypeExtraction(Value *inst, AllocaInst*& var) {
   }
 
   GetElementPtrInst *gep = cast<GetElementPtrInst>(gepv);
-  if (!gep->isInBounds() || !gep->hasAllZeroIndices() || !isSEXP(gep->getPointerOperandType())) {
+  if (!gep->isInBounds() || !gep->hasAllZeroIndices() || !isGEPSourceSEXP(gep)) {
     return false;
   }
   

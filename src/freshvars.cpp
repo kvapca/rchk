@@ -462,7 +462,7 @@ static void handleCall(Instruction *in, CalledModuleTy *cm, SEXPGuardsChecker *s
     for(CallBase::op_iterator ai = cs->arg_begin(), ae = cs->arg_end(); ai != ae; ++ai, ++i) {
       Value *arg = *ai;
       
-      if (i < nParams && !isSEXP(ftype->getParamType(i))) {
+      if (i < nParams && !isFunctionArgSEXP(tgt->fun, i)) {
         // note i can be >= nParams when the function accepts varargs (...)
         continue;
       }

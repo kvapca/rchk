@@ -79,7 +79,7 @@ void checkFunction(Function *fun, std::string symname, int arity) {
   }
   alreadyChecked.insert(fun);
 
-  if (!isSEXP(fun->getReturnType())) {
+  if (!isFunctionRetSEXP(fun)) {
     errs() << "ERROR: function " << funId(symname, fun) << " does not return SEXP\n";
   }
           
@@ -90,7 +90,7 @@ void checkFunction(Function *fun, std::string symname, int arity) {
   }
 
   for(int i = 0; i < real_arity; i++) {
-    if (!isSEXP(ft->getParamType(i))) {
+    if (!isFunctionArgSEXP(fun, i)) {
       errs() << "ERROR: function " << funId(symname, fun) << " parameter " << (i + 1) << " is not SEXP\n";
     }
   }
