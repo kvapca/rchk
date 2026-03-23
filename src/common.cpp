@@ -307,6 +307,31 @@ bool isSEXP(DIType *type) {
   return false;
 }
 
+// Check if type is a struct with exactly one SEXP member
+// as LLVM lowers struct { SEXPREC* } to SEXPREC*
+bool isSEXPWrapper(DIType *type) {
+  if (!type) return false;
+  type = stripQualifiers(type);
+
+  if (auto *derived = dyn_cast<DIDerivedType>(type)) {
+    if (derived->getTag() == dwarf::DW_TAG_typedef)
+      type = stripQualifiers(derived->getBaseType());
+  }
+
+  if (auto *composite = dyn_cast<DICompositeType>(type)) {
+    if (composite->getTag() != dwarf::DW_TAG_structure_type) return false;
+    auto elements = composite->getElements();
+    if (elements.size() != 1) return false;
+
+    if (auto *type = dyn_cast<DIDerivedType>(elements[0])) {
+      if (type->getTag() == dwarf::DW_TAG_member)
+        return isSEXP(type->getBaseType());
+    }
+  }
+
+  return false;
+}
+
 bool isPointerToStruct(Type* type, std::string name) {
   if (!PointerType::classof(type)) {
     return false;
@@ -357,7 +382,8 @@ bool isFunctionSEXP(Function *fun, int functionTypeIndex) {
     }
     auto *functionType = srt->getTypeArray()[functionTypeIndex];
 
-    if (isSEXP(functionType)) {
+    // type may be wrapped due to ABI lowering
+    if (isSEXP(functionType) || isSEXPWrapper(functionType)) {
       return true;
     }
   }
