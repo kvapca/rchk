@@ -364,7 +364,7 @@ bool isFunctionSEXP(Function *fun, int functionTypeIndex) {
   return false;
 }
 
-bool isFunctionReturningSEXP(Function *fun) {
+bool isFunctionRetSEXP(Function *fun) {
   if (!fun) return false;
   bool original = isSEXP(fun->getReturnType());
   bool current = isFunctionSEXP(fun, 0); // 0 is the return type index
@@ -391,7 +391,7 @@ bool isFunctionArgSEXP(Function *fun, int argIndex) {
   return current;
 }
 
-bool isArgumentSEXP(Argument *arg) {
+bool isSEXP(Argument *arg) {
   if (!arg) return false;
   bool original = isSEXP(arg->getType());
 

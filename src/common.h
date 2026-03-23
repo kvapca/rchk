@@ -106,12 +106,13 @@ struct GlobalsTy {
     GlobalVariable *getSpecialVariable(Module *m, std::string name);
 };
 
-bool isPointerToStruct(Type* type, std::string name);
-//bool isPointerToUnion(Type* type, std::string name);
-bool isSEXP(AllocaInst *var);
-bool isSEXP(Type* type);
-bool isSEXPPtr(Type *type);
-bool isSEXP(GlobalVariable *var);
+bool isGEPSourceSEXP(GetElementPtrInst *gep);
+bool isFunctionRetSEXP(Function *fun);
+bool isFunctionArgSEXP(Function *fun, int argIndex);
+bool isSEXP(DIType *type);
+bool isSEXP(Argument *arg);
+bool isSEXP(GlobalVariable *gv);
+bool isSEXP(AllocaInst* ai);
 bool isInstall(Function *f);
 bool isProtectingFunction(Function *f);
 
