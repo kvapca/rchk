@@ -106,6 +106,8 @@ struct GlobalsTy {
     GlobalVariable *getSpecialVariable(Module *m, std::string name);
 };
 
+bool isPointeeStruct(Type* pointee, std::string name);
+
 bool isGEPSourceSEXP(GetElementPtrInst *gep);
 bool isFunctionRetSEXP(Function *fun);
 bool isFunctionArgSEXP(Function *fun, int argIndex);

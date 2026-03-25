@@ -351,9 +351,9 @@ bool isSEXP(Type* type) {
   return isPointerToStruct(type, "struct.SEXPREC");
 }
 
-bool isSEXPRECStruct(Type* pointee) {
+bool isPointeeStruct(Type* pointee, std::string name) {
   if (auto *estr = dyn_cast<StructType>(pointee)) {
-    return estr->hasName() && estr->getName().str() == "struct.SEXPREC";
+    return estr->hasName() && estr->getName().str() == name;
   }
   return false;
 }
@@ -363,7 +363,7 @@ bool isGEPSourceSEXP(GetElementPtrInst* gep) {
   if (!gep) return false;
 
   bool original = isSEXP(gep->getPointerOperandType());
-  if (isSEXPRECStruct(gep->getSourceElementType())) {
+  if (isPointeeStruct(gep->getSourceElementType(), "struct.SEXPREC")) {
     assert(original);
     return true;
   }
