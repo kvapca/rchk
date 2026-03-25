@@ -76,13 +76,21 @@ bool isVectorType(unsigned type) {
 
 bool isVectorOnlyVarOperation(Value *inst, AllocaInst*& var) {
   AllocaInst* tvar;
-  Type *type;
-  
-  if (!isBitCastOfVar(inst, tvar, type)) {
+  GetElementPtrInst* gep;
+
+  // checks whether the result of BitCastInst is VECTOR_SEXPREC* or SEXPREC_ALIGN*
+  if (!isBitCastOfVarFollowedByGEP(inst, tvar, gep)) {
     return false;
   }
+  Type* type = gep->getSourceElementType();
+  bool current = isPointeeStruct(type, "struct.VECTOR_SEXPREC") || isPointeeStruct(type, "union.SEXPREC_ALIGN");
 
-  if (isPointerToStruct(type, "struct.VECTOR_SEXPREC") || isPointerToStruct(type, "union.SEXPREC_ALIGN")) {
+  // TODO: remove after testing
+  Type* type2 = dyn_cast<BitCastInst>(inst)->getDestTy();
+  bool original = isPointerToStruct(type2, "struct.VECTOR_SEXPREC") || isPointerToStruct(type2, "union.SEXPREC_ALIGN");
+
+  assert(original == current);
+  if (current) { 
     var = tvar;
     return true;
   }

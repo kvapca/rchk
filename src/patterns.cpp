@@ -59,7 +59,7 @@ bool isCallPassingVar(Value *inst, AllocaInst*& var, std::string& fname) {
   return true;
 }
 
-bool isBitCastOfVar(Value *inst, AllocaInst*& var, Type*& type) {
+bool isBitCastOfVarFollowedByGEP(Value *inst, AllocaInst*& var, GetElementPtrInst*& gep) {
 
   if (!BitCastInst::classof(inst)) {
     return false;
@@ -76,8 +76,13 @@ bool isBitCastOfVar(Value *inst, AllocaInst*& var, Type*& type) {
   }
   
   var = cast<AllocaInst>(avar);
-  type = cast<Type>(bc->getDestTy());
-  return true;
+
+  // return true only when the bitcast is followed by a GEP, which is the case for vector SEXPRECs
+  for (auto user : inst->users()) {
+    if (gep = dyn_cast<GetElementPtrInst>(user))
+      return true;
+  }
+  return false;
 }
 
 // this is useful e.g. for detecting when a variable is stored into the node stack
