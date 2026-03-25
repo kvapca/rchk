@@ -111,12 +111,16 @@ bool isStoreToStructureElement(Value *inst, std::string structType, std::string 
     return false;
   }
   
-  if (!isPointerToStruct(bc->getSrcTy(), elementType)) {
+  GetElementPtrInst* gep = dyn_cast<GetElementPtrInst>(bc->getOperand(0));
+  if (!gep || !gep->isInBounds()) {
     return false;
   }
-  
-  GetElementPtrInst* gep = dyn_cast<GetElementPtrInst>(bc->getOperand(0));
-  if (!gep || !gep->isInBounds() || !isPointerToStruct(gep->getPointerOperandType(), structType)) {
+
+  // TODO: remove after testing
+  assert(isPointerToStruct(gep->getPointerOperandType(), structType) == isPointeeStruct(gep->getSourceElementType(), structType));
+  assert(isPointerToStruct(bc->getSrcTy(), elementType) == isPointeeStruct(gep->getResultElementType(), elementType));
+
+  if (!isPointeeStruct(gep->getSourceElementType(), structType) || !isPointeeStruct(gep->getResultElementType(), elementType)) {
     return false;
   }
   
