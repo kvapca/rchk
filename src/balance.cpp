@@ -1,6 +1,7 @@
 
 #include "balance.h"
 
+#include "llvm/Analysis/ConstantFolding.h"
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/Function.h>
 #include <llvm/IR/Instruction.h>
@@ -565,8 +566,11 @@ bool handleBalanceForTerminator(TerminatorInst* t, StateWithBalanceTy& s, Global
     // if (nprotect??const) { .... }
                   
     Constant *knownLhs = ConstantInt::getSigned(s.balance.counterVar->getAllocatedType(), s.balance.count);
-    Constant *res = ConstantExpr::getCompare(ci->getPredicate(), knownLhs, constOp);
+    // TODO: remove after testing
+    Constant *res_old = ConstantExpr::getCompare(ci->getPredicate(), knownLhs, constOp);
+    Constant *res = ConstantFoldCompareInstOperands(ci->getPredicate(), knownLhs, constOp, ci->getModule()->getDataLayout());
     myassert(ConstantInt::classof(res));
+    assert(res->isZeroValue() == res_old->isZeroValue());
                 
     // add only the relevant successor
     if (msg.debug()) msg.debug(MSG_PFX + "folding out branch on counter value", t);
