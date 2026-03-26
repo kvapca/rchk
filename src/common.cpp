@@ -255,6 +255,8 @@ std::string varName(const AllocaInst *var) {
   return name;
 }
 
+// strips const, volatile, restrict, atomic, immutable and reference qualifiers
+// does not strip typedef, pointer and member
 DIType *stripQualifiers(DIType *type) {
   if (!type) return nullptr;
   
