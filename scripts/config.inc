@@ -34,7 +34,7 @@ elif [ X"`hostname -s`" == Xpod ] ; then
 elif [ X"`hostname -s`" == Xlunovo ] ; then
 
   export WLLVM=/usr/local/bin
-  export LLVM=/lib/llvm-14
+  export LLVM=/lib/llvm-22
   export RCHK=/home/kvasa/Documents/programming/FIT/BAP/rchk
 
 else
