@@ -9,7 +9,6 @@
 #include <llvm/IR/DebugInfo.h>
 #include <llvm/IR/Function.h>
 #include <llvm/IR/Instruction.h>
-#include <llvm/IR/IntrinsicInst.h>
 #include <llvm/IR/InstIterator.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Module.h>
@@ -227,14 +226,10 @@ std::string computeVarName(const AllocaInst *var) {
   // there ought be a simpler way in LLVM, but it seems there is not  
   for(const_inst_iterator ii = inst_begin(*f), ie = inst_end(*f); ii != ie; ++ii) {
     const Instruction *in = &*ii;
-  
-    if (const DbgDeclareInst *ddi = dyn_cast<DbgDeclareInst>(in)) {
-      if (ddi->getAddress() == var) {
-        return ddi->getVariable()->getName().str();
-      }
-    } else if (const DbgValueInst *dvi = dyn_cast<DbgValueInst>(in)) {
-      if (dvi->getValue() == var) {
-        return dvi->getVariable()->getName().str();
+
+    for (DbgVariableRecord dvr : filterDbgVars(in->getDbgRecordRange())) {
+      if (dvr.getAddress() == var) {
+        return dvr.getVariable()->getName().str();
       }
     }
   }
@@ -376,18 +371,18 @@ bool isFunctionRetSEXP(Function *fun) {
 }
 
 // finds IR argument corresponding to the DI variable
-Argument* getArgFromDebugVar(DbgVariableIntrinsic *DVI) {
-  if (!DVI) return nullptr;
+Argument* getArgFromDebugVar(DbgVariableRecord *DVR) {
+  if (!DVR) return nullptr;
 
-  auto *var = DVI->getVariable();
+  auto *var = DVR->getVariable();
   if (!var) return nullptr;
 
   // first try the direct case: argument directly in DVI
-  auto *arg = dyn_cast<Argument>(DVI->getVariableLocationOp(0));
+  auto *arg = dyn_cast<Argument>(DVR->getVariableLocationOp(0));
   if (arg) return arg;
 
   // if not there are two ways
-  if (auto *alloca = dyn_cast<AllocaInst>(DVI->getVariableLocationOp(0))) {
+  if (auto *alloca = dyn_cast<AllocaInst>(DVR->getVariableLocationOp(0))) {
     for (auto *user : alloca->users()) {
       // direct: store alloca -> store (for non-coerced structs)
       if (auto *store = dyn_cast<StoreInst>(user)) {
@@ -417,20 +412,19 @@ IRToDIIndexMapTy buildIRToDIIndexMap(Function *fun) {
   // iterate over instructions in function
   for (auto &inst : instructions(fun)) {
 
-    // look for DbgDeclareInst and DbgValueInst, which have variable and type info; there will be only dbg.declare with -O0
-    auto *DVI = dyn_cast<DbgVariableIntrinsic>(&inst);
-    if (!DVI) continue;
-
-    auto *var = DVI->getVariable();
-    if (!var) continue;
-    
-    unsigned DIArgIndex = var->getArg();
-    if (DIArgIndex == 0) continue; // DIArgIndex == 0 means return type or local variable, we are only interested in arguments
-
-    Argument *arg = getArgFromDebugVar(DVI);
-    if (!arg) continue;
-
-    map[arg->getArgNo()] = DIArgIndex;
+    // look for DbgVariableRecord, which has variable and type info
+    for (DbgVariableRecord DVR : filterDbgVars(inst.getDbgRecordRange())) {      
+      auto *var = DVR.getVariable();
+      if (!var) continue;
+      
+      unsigned DIArgIndex = var->getArg();
+      if (DIArgIndex == 0) continue; // DIArgIndex == 0 means return type or local variable, we are only interested in arguments
+      
+      Argument *arg = getArgFromDebugVar(&DVR);
+      if (!arg) continue;
+      
+      map[arg->getArgNo()] = DIArgIndex;
+    }
   }
   return map;
 }
