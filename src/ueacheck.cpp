@@ -183,7 +183,7 @@ bool isLoadOfUnprotectedObject(Value *arg, Instruction *callInst, FunctionsSetTy
   if (!AllocaInst::classof(v) || !isSEXP(cast<AllocaInst>(v))) { // FIXME: does not handle phi nodes
     return false;
   }
-  if (PointerMayBeCapturedBefore(v, false, true, callInst, &dominatorTree, true)) {
+  if (PointerMayBeCapturedBefore(v, false, callInst, &dominatorTree, true)) {
     return false;
   }
   StoreInst* allocStore = getDominatingNonProtectingAllocatingStore(cast<AllocaInst>(v), cast<LoadInst>(arg), possibleAllocators, dominatorTree);

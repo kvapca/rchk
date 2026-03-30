@@ -591,11 +591,9 @@ bool isSEXP(AllocaInst* ai) {
   if (ai->isArrayAllocation() /* need to check this? */) {
     return false;
   }
-  bool original = isSEXP(ai->getAllocatedType());
-  return original;
 
-  SmallVector<DbgVariableIntrinsic *, 32> variablesVector;
-  findDbgUsers(variablesVector, ai); // with -O0 returns only dbg.declare
+  SmallVector<DbgVariableRecord *, 32> variablesVector;
+  findDbgUsers(ai, variablesVector); // with -O0 returns only dbg.declare
 
   for (auto *variable : variablesVector) {
     if (!variable) continue;
