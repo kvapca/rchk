@@ -252,16 +252,19 @@ bool operandComesFromVariable(Instruction *inst, Value *operand, AllocaInst*& va
   // find the latest store of the value to a varible, which is still before the instruction
   StoreInst *latests = NULL;
   AllocaInst *latestsvar = NULL;
-  for(Value::user_iterator ui = operand->user_begin(), ue = operand->user_end(); ui != ue; ++ui) {
-    User *u = *ui;
-    if (StoreInst::classof(u)) {
-      StoreInst *si = cast<StoreInst>(u);
-      if (si->getParent() && si->getParent() == inst->getParent() && si->comesBefore(inst)
-          && si->getValueOperand() == operand) {
-        Value* storePointer = si->getPointerOperand();
-        if (AllocaInst::classof(storePointer) && (!latests || latests->comesBefore(si))) {
-          latests = si;
-          latestsvar = cast<AllocaInst>(storePointer);
+
+  if (operand->hasUseList()) {
+    for(Value::user_iterator ui = operand->user_begin(), ue = operand->user_end(); ui != ue; ++ui) {
+      User *u = *ui;
+      if (StoreInst::classof(u)) {
+        StoreInst *si = cast<StoreInst>(u);
+        if (si->getParent() && si->getParent() == inst->getParent() && si->comesBefore(inst)
+        && si->getValueOperand() == operand) {
+          Value* storePointer = si->getPointerOperand();
+          if (AllocaInst::classof(storePointer) && (!latests || latests->comesBefore(si))) {
+            latests = si;
+            latestsvar = cast<AllocaInst>(storePointer);
+          }
         }
       }
     }

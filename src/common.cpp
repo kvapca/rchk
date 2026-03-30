@@ -522,7 +522,7 @@ bool traverseToSEXP(Value* start, int depth) {
     }
     if (TRVS_DBG) errs() << "Visiting value: " << *curr << " with depth " << currDepth << "\n";
 
-    if (! curr->hasUseList()) continue; // ConstantData asserts this when iterating over uses
+    if (!curr->hasUseList()) continue; // ConstantData asserts this when iterating over uses
     for (Use &use : curr->uses()) {
       User *user = use.getUser();
 

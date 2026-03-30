@@ -101,6 +101,7 @@ void findPossiblyReturnedVariables(Function *f, VarsSetTy& possiblyReturned) {
 
 // this ignores derived/cast values
 static bool valueMayBeReturned(Value* v, VarsSetTy& possiblyReturned) {
+  if (!v->hasUseList()) return false;
 
   for(Value::user_iterator ui = v->user_begin(), ue = v->user_end(); ui != ue; ++ui) {
     User *u = *ui;
