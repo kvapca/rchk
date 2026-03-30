@@ -23,44 +23,6 @@
 
 using namespace llvm;
 
-// return true if there is SEXP somewhere within type t
-typedef std::unordered_set<Type*> TypeSetTy;
-
-bool containsSEXP(Type *t, TypeSetTy& visited) {
-
-  if (visited.find(t) != visited.end()) {
-    // already under evaluation (recursive type)
-    return false;
-  }
-  visited.insert(t);
-  
-  if (ArrayType *at = dyn_cast<ArrayType>(t)) {
-    return containsSEXP(at->getElementType(), visited);
-  }
-
-  if (PointerType *pt = dyn_cast<PointerType>(t)) {
-    return containsSEXP(pt->getPointerElementType(), visited);
-  }
-  
-  if (VectorType *vt = dyn_cast<VectorType>(t)) {
-    return containsSEXP(vt->getPointerElementType(), visited);
-  }
-
-  if (StructType *st = dyn_cast<StructType>(t)) {
-
-    if (st->hasName() && st->getName() == "struct.SEXPREC") {
-      return true;
-    }
-    unsigned nelems = st->getNumElements();
-    for(unsigned i = 0; i < nelems; i++) {
-      if (containsSEXP(st->getElementType(i), visited)) {
-        return true;
-      }
-    }
-  }
-  return false;
-}
-
 DICompositeType* resolveForwardDeclaration(DICompositeType* t, Module* m) {
   if (!t) return nullptr;
 
@@ -131,11 +93,6 @@ bool containsSEXP(DIType *t, DITypeSetTy& visited, Module* m) {
 }
 
 bool isStructureWithSEXPFields(GlobalVariable *gv, Module* m) {
-  // TODO: remove after testing
-  TypeSetTy visited_old;
-  bool original = containsSEXP(gv->getType(), visited_old);
-  bool current = false;
-
   DITypeSetTy visited;
 
   SmallVector<DIGlobalVariableExpression *> debugInfoVector;
@@ -149,13 +106,11 @@ bool isStructureWithSEXPFields(GlobalVariable *gv, Module* m) {
     DIType *type = variable->getType();
 
     if (containsSEXP(type, visited, m)) {
-      current = true;
-      break;
+      return true;
     }
   }
 
-  assert(current == original);
-  return current;
+  return false;
 }
 
 int main(int argc, char* argv[])

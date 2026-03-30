@@ -103,21 +103,9 @@ bool checkTable(Value *v, bool checkDotCallArity, StringMapTy& smap) {
  
       int nfuns = -1;
       
-      bool current = false;
       if (ArrayType *at = dyn_cast<ArrayType>(gv->getValueType())) {
-        current = true;
         nfuns = (int) at->getNumElements();
       }
-
-      // TODO: remove after testing
-      bool original = false;
-      if (PointerType *pt = dyn_cast<PointerType>(gv->getType())) {
-        if (ArrayType *at = dyn_cast<ArrayType>(pt->getPointerElementType())) {
-          original = true;
-          nfuns = (int) at->getNumElements();
-        }
-      }
-      assert(current == original);
       
       if (nfuns == -1) {
         errs() << "ERROR: did not get the number of elements in function table\n";

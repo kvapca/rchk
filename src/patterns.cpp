@@ -121,10 +121,6 @@ bool isStoreToStructureElement(Value *inst, std::string structType, std::string 
     return false;
   }
 
-  // TODO: remove after testing
-  assert(isPointerToStruct(gep->getPointerOperandType(), structType) == isPointeeStruct(gep->getSourceElementType(), structType));
-  assert(isPointerToStruct(bc->getSrcTy(), elementType) == isPointeeStruct(gep->getResultElementType(), elementType));
-
   if (!isPointeeStruct(gep->getSourceElementType(), structType) || !isPointeeStruct(gep->getResultElementType(), elementType)) {
     return false;
   }

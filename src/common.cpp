@@ -334,25 +334,6 @@ bool isSEXPWrapper(DIType *type) {
   return false;
 }
 
-bool isPointerToStruct(Type* type, std::string name) {
-  if (!PointerType::classof(type)) {
-    return false;
-  }
-  Type *etype = (cast<PointerType>(type))->getPointerElementType();
-  if (!StructType::classof(etype)) {
-    return false;
-  }
-  StructType *estr = cast<StructType>(etype);
-  if (!estr->hasName() || estr->getName().str() != name) {
-    return false;
-  }
-  return true;
-}
-
-bool isSEXP(Type* type) {
-  return isPointerToStruct(type, "struct.SEXPREC");
-}
-
 bool isPointeeStruct(Type* pointee, std::string name) {
   if (auto *estr = dyn_cast<StructType>(pointee)) {
     return estr->hasName() && estr->getName().str() == name;
@@ -364,12 +345,9 @@ bool isPointeeStruct(Type* pointee, std::string name) {
 bool isGEPSourceSEXP(GetElementPtrInst* gep) {
   if (!gep) return false;
 
-  bool original = isSEXP(gep->getPointerOperandType());
   if (isPointeeStruct(gep->getSourceElementType(), "struct.SEXPREC")) {
-    assert(original);
     return true;
   }
-  assert(!original);
   return false;
 }
 
@@ -394,11 +372,7 @@ bool isFunctionSEXP(Function *fun, int functionTypeIndex) {
 
 bool isFunctionRetSEXP(Function *fun) {
   if (!fun) return false;
-  bool original = isSEXP(fun->getReturnType());
-  bool current = isFunctionSEXP(fun, 0); // 0 is the return type index
-
-  assert(current == original);
-  return current;
+  return isFunctionSEXP(fun, 0); // 0 is the return type index
 }
 
 // finds IR argument corresponding to the DI variable
@@ -467,36 +441,28 @@ bool isFunctionArgSEXP(Function *fun, int argIndex) {
   if (argIndex < 0 || argIndex >= fun->arg_size()) {
     return false;
   }
-  bool original = isSEXP(fun->getFunctionType()->getParamType(argIndex));
-  bool current = false;
 
   IRToDIIndexMapTy map = buildIRToDIIndexMap(fun);
   auto search = map.find(argIndex);
   if (search != map.end()) {
     unsigned DIArgIndex = search->second;
-    current = isFunctionSEXP(fun, DIArgIndex);
+    return isFunctionSEXP(fun, DIArgIndex);
   }
 
-  assert(current == original);
-  return current;
+  return false;
 }
 
 bool isSEXP(Argument *arg) {
   if (!arg) return false;
-  bool original = isSEXP(arg->getType());
 
   auto *fun = arg->getParent();
   auto argIndex = arg->getArgNo();
 
-  bool current = isFunctionArgSEXP(fun, argIndex);
-  assert(current == original);
-  return current;
+  return isFunctionArgSEXP(fun, argIndex);
 }
 
 bool isSEXP(GlobalVariable *gv) {
   if (!gv) return false;
-
-  bool original = isSEXP(gv->getValueType());
 
   SmallVector<DIGlobalVariableExpression *> debugInfoVector;
   gv->getDebugInfo(debugInfoVector);
@@ -509,11 +475,9 @@ bool isSEXP(GlobalVariable *gv) {
     DIType *type = variable->getType();
     
     if (isSEXP(type)) {
-      assert(original);
       return true;
     }
   }
-  assert(!original);
   return false;
 }
 
@@ -641,14 +605,11 @@ bool isSEXP(AllocaInst* ai) {
     DIType *type = localVariable->getType();
 
     if (isSEXP(type)) {
-      assert(original);
       return true;
     }
   }
   // alloca is pointer to allocated type -> check for SEXP* -> set depth to 1
-  bool traverseVal = traverseToSEXP(ai, 1);
-  assert(traverseVal == original);
-  return traverseVal;
+  return traverseToSEXP(ai, 1);
 }
 
 bool isInstall(Function *f) {

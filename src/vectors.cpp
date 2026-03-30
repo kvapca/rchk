@@ -83,14 +83,7 @@ bool isVectorOnlyVarOperation(Value *inst, AllocaInst*& var) {
     return false;
   }
   Type* type = gep->getSourceElementType();
-  bool current = isPointeeStruct(type, "struct.VECTOR_SEXPREC") || isPointeeStruct(type, "union.SEXPREC_ALIGN");
-
-  // TODO: remove after testing
-  Type* type2 = dyn_cast<BitCastInst>(inst)->getDestTy();
-  bool original = isPointerToStruct(type2, "struct.VECTOR_SEXPREC") || isPointerToStruct(type2, "union.SEXPREC_ALIGN");
-
-  assert(original == current);
-  if (current) { 
+  if (isPointeeStruct(type, "struct.VECTOR_SEXPREC") || isPointeeStruct(type, "union.SEXPREC_ALIGN")) { 
     var = tvar;
     return true;
   }

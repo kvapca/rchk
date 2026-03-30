@@ -39,8 +39,8 @@ else ifeq ($(HOST), pod)
   CALLOCATORS_MAX_STATES := 1000000
 
 else ifeq ($(HOST), lunovo)
-  LLVM = /lib/llvm-14
-#   LLVM = /lib/llvm-22
+#   LLVM = /lib/llvm-14
+  LLVM = /lib/llvm-22
   CXX := g++
 #  CXX := $(LLVM)/bin/clang++
   BCHECK_MAX_STATES := 800000
