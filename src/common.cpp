@@ -380,6 +380,7 @@ GlobalsTy::GlobalsTy(Module *m) : typesMap() {
 Function* GlobalsTy::getSpecialFunction(Module *m, std::string name) {
   Function *f = m->getFunction(name);
   if (!f) {
+    outs().flush();
     errs() << "  Function " << name << " not found in module (won't check its use).\n";
   }
   return f;
@@ -388,6 +389,7 @@ Function* GlobalsTy::getSpecialFunction(Module *m, std::string name) {
 GlobalVariable* GlobalsTy::getSpecialVariable(Module *m, std::string name) {
   GlobalVariable *v = m->getGlobalVariable(name, true);
   if (!v) {
+    outs().flush();
     errs() << "  Variable " << name << " not found in module (won't check its use).\n";
   }
   return v;

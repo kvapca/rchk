@@ -520,6 +520,7 @@ static void getCalledAndWrappedFunctions(const CalledFunctionTy *f, LineMessenge
     }
       
     if (doneSet.size() > MAX_STATES) {
+      outs().flush();
       errs() << "ERROR: too many states (abstraction error?) in function " << funName(f) << "\n";
       clearStates();
       delete intGuardsChecker;

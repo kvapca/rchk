@@ -75,12 +75,14 @@ void findSymbols(Module *m, SymbolsMapTy* symbolsMap) {
           foundInstall = true;
         } else {
           if (symbolName != name) {
+            outs().flush();
             errs() << "ERROR: Multiple names for symbol " << gv->getName() << ": " << symbolName << " and " << name << "\n";
             goto cannot_be_symbol;
           }
         }
       } else {
         if (foundInstall) {
+          outs().flush();
           errs() << "ERROR: Invalid write to symbol " << gv->getName();
           if (Instruction::classof(valueOp)) {
             errs() << " at " << sourceLocation(cast<Instruction>(valueOp));
