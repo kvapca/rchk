@@ -564,7 +564,6 @@ bool traverseToSEXP(Value* start, int depth) {
         }
       }
       else {
-        // bitcasts are ignored as previous analysis didn't do any traversals so handling them may change (improve?) results
         if (TRVS_DBG) {
           errs() << "Unhandled instruction type in traverseToSEXP: ";
           user->print(errs());
