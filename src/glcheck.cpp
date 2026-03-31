@@ -29,7 +29,7 @@ DICompositeType* resolveForwardDeclaration(DICompositeType* t, Module* m) {
   // cache name and actual composite type on first run
   static Module* cachedModule = nullptr;
   static std::unordered_map<std::string, DICompositeType*> cache;
-  if (cachedModule == m) {
+  if (cachedModule != m) {
     cachedModule = m;
     cache.clear();
 
@@ -64,7 +64,7 @@ bool containsSEXP(DIType *t, DITypeSetTy& visited, Module* m) {
     return false;
   }
   visited.insert(t);
-  
+
   if (auto *derived = dyn_cast<DIDerivedType>(t)) {
     return containsSEXP(derived->getBaseType(), visited, m);
   }
