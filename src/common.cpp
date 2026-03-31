@@ -574,10 +574,7 @@ bool traverseToSEXP(Value* start, int depth) {
     }
     if (ended) break;
   }
-
-  for (const auto& pair : visited) {
-    cache[pair] = result;
-  }
+  cache[{start, depth}] = result;
   return result;
 }
 
