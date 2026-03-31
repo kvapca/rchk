@@ -388,6 +388,7 @@ class FunctionChecker {
       }
       
       if (doneSet.size() > MAX_STATES) {
+        outs().flush();
         errs() << "ERROR: too many states (abstraction error?) in function " << funName(fun) << "\n";
         clearStates();
         return;
