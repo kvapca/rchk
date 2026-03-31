@@ -505,6 +505,7 @@ bool traverseToSEXP(Value* start, int depth) {
     // check global cache
     auto cached = cache.find({curr, currDepth});
     if (cached != cache.end() && cached->second) {
+      if (TRVS_DBG) errs() << "Found SEXP source in cache: " << *curr << "\n";
       result = true;
       ended = true;
       break;
