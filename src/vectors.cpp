@@ -78,8 +78,8 @@ bool isVectorOnlyVarOperation(Value *inst, AllocaInst*& var) {
   AllocaInst* tvar;
   GetElementPtrInst* gep;
 
-  // checks whether the result of BitCastInst is VECTOR_SEXPREC* or SEXPREC_ALIGN*
-  if (!isBitCastOfVarFollowedByGEP(inst, tvar, gep)) {
+  // checks whether the result of LoadInst is VECTOR_SEXPREC* or SEXPREC_ALIGN*
+  if (!isLoadFollowedByGEP(inst, tvar, gep)) {
     return false;
   }
   Type* type = gep->getSourceElementType();
