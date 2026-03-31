@@ -93,8 +93,6 @@ bool containsSEXP(DIType *t, DITypeSetTy& visited, Module* m) {
 }
 
 bool isStructureWithSEXPFields(GlobalVariable *gv, Module* m) {
-  DITypeSetTy visited;
-
   SmallVector<DIGlobalVariableExpression *> debugInfoVector;
   gv->getDebugInfo(debugInfoVector);
 
@@ -105,6 +103,7 @@ bool isStructureWithSEXPFields(GlobalVariable *gv, Module* m) {
     if (!variable) continue;
     DIType *type = variable->getType();
 
+    DITypeSetTy visited;
     if (containsSEXP(type, visited, m)) {
       return true;
     }
