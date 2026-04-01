@@ -384,7 +384,7 @@ Argument* getArgFromDebugVar(DbgVariableRecord *DVR) {
   // if not there are two ways
   if (auto *alloca = dyn_cast<AllocaInst>(DVR->getVariableLocationOp(0))) {
     for (auto *user : alloca->users()) {
-      // direct: store alloca -> store (for non-coerced structs)
+      // direct: alloca -> store (for non-coerced structs)
       if (auto *store = dyn_cast<StoreInst>(user)) {
         arg = dyn_cast<Argument>(store->getValueOperand());
         if (arg) break;
