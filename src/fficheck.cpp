@@ -98,77 +98,72 @@ void checkFunction(Function *fun, std::string symname, int arity) {
 
 bool checkTable(Value *v, bool checkDotCallArity, StringMapTy& smap) {
 
-  if (ConstantExpr *ce = dyn_cast<ConstantExpr>(v)) {
-    if (GlobalVariable *gv = dyn_cast<GlobalVariable>(ce->getOperand(0))) {
- 
-      int nfuns = -1;
-      
-      if (ArrayType *at = dyn_cast<ArrayType>(gv->getValueType())) {
-        nfuns = (int) at->getNumElements();
-      }
-      
-      if (nfuns == -1) {
-        errs() << "ERROR: did not get the number of elements in function table\n";
-        return false;    
-      }
-        
-      if (ConstantArray *ca = dyn_cast<ConstantArray>(gv->getInitializer())) {
-        int realfuns = 0;
-        for(int i = 0; i < nfuns; i++) {
-          ConstantStruct *cstr = dyn_cast<ConstantStruct>(ca->getAggregateElement(i));
-          if (!cstr) {
-            if (i == nfuns - 1)
-              break;
-            else {
-              /* could check it is NULL */
-              errs() << "ERROR: invalid entry in function table\n";
-              return false;
-            }
-          }
-          
-          int64_t arity;
-          if (ConstantInt *ci = dyn_cast<ConstantInt>(cstr->getAggregateElement(2U))) {
-            arity = ci->getSExtValue();
-          } else {
-            errs() << "ERROR: invalid arity in function table\n";
-            return false;
-          }
-          
-          std::string fname = "";
-          if (ConstantExpr *ce = dyn_cast<ConstantExpr>(cstr->getAggregateElement(0U))) {
-            if (GlobalVariable *ngv = dyn_cast<GlobalVariable>(ce->getOperand(0))) {
-              if (ConstantDataArray *nda = dyn_cast<ConstantDataArray>(ngv->getInitializer())) {
-                fname = nda->getAsCString().str();
-              }
-            }
-          }
-          if (fname.length() == 0) {
-            errs() << "ERROR: invalid function name string in function table\n";
-            return false;
-          }
-          
-          Function *fun = NULL;
-          if (ConstantExpr *ce = dyn_cast<ConstantExpr>(cstr->getAggregateElement(1U))) {
-            fun = dyn_cast<Function>(ce->getOperand(0));
-          }
-          if (!fun) {
-            errs() << "ERROR: invalid function in function table\n";
-            return false;
-          }
-          
-          if (!checkDotCallArity)
-            arity = -1; /* do not check arity, e.g. because it is .External */
-            
-          checkFunction(fun, fname, arity);
-          realfuns++;
-          
-          smap.insert({fname, funName(fun)});
-          
-          /* errs() << "checked function " << fname << " (" << funName(fun) << ") arity " << arity << "\n"; */
+  GlobalVariable *gv = dyn_cast<GlobalVariable>(v);
+  if (!gv) {
+    return false;
+  }
+
+    int nfuns = -1;
+
+  if (ArrayType *at = dyn_cast<ArrayType>(gv->getValueType())) {
+    nfuns = (int) at->getNumElements();
+  }
+
+  if (nfuns == -1) {
+    errs() << "ERROR: did not get the number of elements in function table\n";
+    return false;    
+  }
+
+  if (ConstantArray *ca = dyn_cast<ConstantArray>(gv->getInitializer())) {
+    int realfuns = 0;
+    for(int i = 0; i < nfuns; i++) {
+      ConstantStruct *cstr = dyn_cast<ConstantStruct>(ca->getAggregateElement(i));
+      if (!cstr) {
+        if (i == nfuns - 1)
+          break;
+        else {
+          /* could check it is NULL */
+          errs() << "ERROR: invalid entry in function table\n";
+          return false;
         }
-        errs() << "Functions: " << realfuns << "\n";
       }
+
+      int64_t arity;
+      if (ConstantInt *ci = dyn_cast<ConstantInt>(cstr->getAggregateElement(2U))) {
+        arity = ci->getSExtValue();
+      } else {
+        errs() << "ERROR: invalid arity in function table\n";
+        return false;
+      }
+
+      std::string fname = "";
+      if (GlobalVariable *ngv = dyn_cast<GlobalVariable>(cstr->getAggregateElement(0U))) {
+        if (ConstantDataArray *nda = dyn_cast<ConstantDataArray>(ngv->getInitializer())) {
+          fname = nda->getAsCString().str();
+        }
+      }
+      if (fname.length() == 0) {
+        errs() << "ERROR: invalid function name string in function table\n";
+        return false;
+      }
+
+      Function *fun = fun = dyn_cast<Function>(cstr->getAggregateElement(1U));
+      if (!fun) {
+        errs() << "ERROR: invalid function in function table\n";
+        return false;
+      }
+
+      if (!checkDotCallArity)
+        arity = -1; /* do not check arity, e.g. because it is .External */
+
+      checkFunction(fun, fname, arity);
+      realfuns++;
+
+      smap.insert({fname, funName(fun)});
+
+      /* errs() << "checked function " << fname << " (" << funName(fun) << ") arity " << arity << "\n"; */
     }
+    errs() << "Functions: " << realfuns << "\n";
   }
   
   return true; /* successful parsing */
