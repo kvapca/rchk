@@ -35,7 +35,7 @@ elif [ X"`hostname -s`" == Xlunovo ] ; then
 
   export WLLVM=/usr/local/bin
   export LLVM=/lib/llvm-14
-  export RCHK=/home/kvasa/Documents/programming/FIT/BAP/rchk
+  export RCHK=/home/kvasa/Documents/programming/FIT/BAP/rchk14
 
 else
   echo "Please specify directories in config.inc" >&2
