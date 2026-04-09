@@ -9,6 +9,7 @@
 #include "exceptions.h"
 #include "patterns.h"
 
+#include <queue>
 #include <map>
 #include <stack>
 #include <unordered_set>
@@ -822,6 +823,41 @@ static void buildClosure(BoolMatrixTy& mat, AdjacencyListTy& list, unsigned n) {
   }
 }
 
+
+typedef std::vector<bool> BoolLineTy;
+
+// calculates which functions call targedIdx function (targedIdx doesn't call itself)
+static BoolLineTy computeCanReach(const AdjacencyListTy& list, unsigned targedIdx) {
+  // list[i] are all functions that get called by function i
+  // lets reverse edges
+  // neighbours[i] are all functions that call function i
+  AdjacencyListTy neighbours(list.size());
+  for(unsigned i = 0; i < list.size(); i++) {
+    for(unsigned j : list[i]) {
+      if (j >= neighbours.size()) neighbours.resize(j+1);
+      
+      neighbours[j].push_back(i);
+    }
+  }
+
+  // now we can calculate which functions call targedIdx by running BFS from it
+  BoolLineTy canReach(list.size(), false);
+  std::queue<unsigned> q {{targedIdx}};
+
+  while(!q.empty()) {
+    unsigned i = q.front();
+    q.pop();
+
+    for(unsigned j : neighbours[i]) {
+      if (!canReach[j]) {
+        canReach[j] = true;
+        q.push(j);
+      }
+    }
+  }
+  return canReach;
+}
+
 void CalledModuleTy::computeCalledAllocators() {
 
   // find calls and variable origins for each called function
@@ -907,7 +943,24 @@ void CalledModuleTy::computeCalledAllocators() {
 
   buildClosure(callsMat, callsList, nfuncs);
   buildClosure(wrapsMat, wrapsList, nfuncs);
-  
+
+  // calculate canReach for GC function
+  auto callsGC = computeCanReach(callsList, gcFunction->idx);
+  auto wrapsGC = computeCanReach(wrapsList, gcFunction->idx);
+
+  // asserts that canReach is consistent with the closure
+  for(unsigned i = 0; i < nfuncs; i++) {
+    if (callsMat[i][gcFunction->idx] != callsGC[i]){
+      errs() << "ERROR: canReach is inconsistent with closure for calls, function " << funName(getCalledFunction(i)) << "\n";
+    }
+    if (wrapsMat[i][gcFunction->idx] != wrapsGC[i]){
+      errs() << "ERROR: canReach is inconsistent with closure for wraps, function " << funName(getCalledFunction(i)) << "\n";
+    }
+    errs().flush();
+    assert(callsMat[i][gcFunction->idx] == callsGC[i]);
+    assert(wrapsMat[i][gcFunction->idx] == wrapsGC[i]);
+  }
+
   // fill in results
   
   // also fill in context-sensitive non-called allocators, allocating functions
