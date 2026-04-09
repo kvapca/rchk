@@ -776,55 +776,13 @@ static void getCalledAndWrappedFunctions(const CalledFunctionTy *f, LineMessenge
   }
 }
 
-typedef std::vector<std::vector<bool>> BoolMatrixTy;
+typedef std::vector<bool> BoolLineTy;
 typedef std::vector<unsigned> AdjacencyListRow;
 typedef std::vector<AdjacencyListRow> AdjacencyListTy;
 
 static void resize(AdjacencyListTy& list, unsigned n) {
   list.resize(n);
 }
-
-static void resize(BoolMatrixTy& matrix, unsigned n) {
-  unsigned oldn = matrix.size();
-  if (n <= oldn) {
-    return;
-  }
-  matrix.resize(n);
-  for (unsigned i = 0; i < n; i++) {
-    matrix[i].resize(n);
-  }
-}
-
-static void buildClosure(BoolMatrixTy& mat, AdjacencyListTy& list, unsigned n) {
-
-  bool added = true;
-  while(added) {
-    added = false;
-    
-    for(unsigned i = 0; i < n; i++) {
-      for(unsigned jidx = 0; jidx < list[i].size(); jidx++) {
-        unsigned j = list[i][jidx];
-        if (i == j) {
-          continue;
-        }
-        for(unsigned kidx = 0; kidx < list[j].size(); kidx++) {
-          unsigned k = list[j][kidx];
-          if (j == k) {
-            continue;
-          }
-          if (!mat[i][k]) {
-            mat[i][k] = true;
-            list[i].push_back(k);
-            added = true;
-          }
-        }
-      }
-    }
-  }
-}
-
-
-typedef std::vector<bool> BoolLineTy;
 
 // calculates which functions call targedIdx function (targedIdx doesn't call itself)
 static BoolLineTy computeCanReach(const AdjacencyListTy& list, unsigned targedIdx) {
@@ -878,9 +836,7 @@ void CalledModuleTy::computeCalledAllocators() {
   
   unsigned nfuncs = getNumberOfCalledFunctions(); // NOTE: nfuncs can increase during the checking
 
-  BoolMatrixTy callsMat(nfuncs, std::vector<bool>(nfuncs));  // calls[i][j] - function i calls function j
   AdjacencyListTy callsList(nfuncs, AdjacencyListRow()); // calls[i] - list of functions called by i
-  BoolMatrixTy wrapsMat(nfuncs, std::vector<bool>(nfuncs));  // wraps[i][j] - function i wraps function j
   AdjacencyListTy wrapsList(nfuncs, AdjacencyListRow()); // wraps[i] - list of functions wrapped by i
   
   for(unsigned i = 0; i < getNumberOfCalledFunctions(); i++) {
@@ -923,43 +879,21 @@ void CalledModuleTy::computeCalledAllocators() {
     nfuncs = getNumberOfCalledFunctions(); // get the current size
     resize(callsList, nfuncs);
     resize(wrapsList, nfuncs);
-    resize(callsMat, nfuncs);
-    resize(wrapsMat, nfuncs);
     
     for(CalledFunctionsOrderedSetTy::const_iterator cfi = called.begin(), cfe = called.end(); cfi != cfe; ++cfi) {
       const CalledFunctionTy *cf = *cfi;
-      callsMat[f->idx][cf->idx] = true;
       callsList[f->idx].push_back(cf->idx);
     }
 
     for(CalledFunctionsOrderedSetTy::const_iterator wfi = wrapped.begin(), wfe = wrapped.end(); wfi != wfe; ++wfi) {
       const CalledFunctionTy *wf = *wfi;
-      wrapsMat[f->idx][wf->idx] = true;
       wrapsList[f->idx].push_back(wf->idx);
     }    
   }
-  
-  // calculate transitive closure
-
-  buildClosure(callsMat, callsList, nfuncs);
-  buildClosure(wrapsMat, wrapsList, nfuncs);
 
   // calculate canReach for GC function
-  auto callsGC = computeCanReach(callsList, gcFunction->idx);
-  auto wrapsGC = computeCanReach(wrapsList, gcFunction->idx);
-
-  // asserts that canReach is consistent with the closure
-  for(unsigned i = 0; i < nfuncs; i++) {
-    if (callsMat[i][gcFunction->idx] != callsGC[i]){
-      errs() << "ERROR: canReach is inconsistent with closure for calls, function " << funName(getCalledFunction(i)) << "\n";
-    }
-    if (wrapsMat[i][gcFunction->idx] != wrapsGC[i]){
-      errs() << "ERROR: canReach is inconsistent with closure for wraps, function " << funName(getCalledFunction(i)) << "\n";
-    }
-    errs().flush();
-    assert(callsMat[i][gcFunction->idx] == callsGC[i]);
-    assert(wrapsMat[i][gcFunction->idx] == wrapsGC[i]);
-  }
+  auto callsCanReach = computeCanReach(callsList, gcFunction->idx);
+  auto wrapsCanReach = computeCanReach(wrapsList, gcFunction->idx);
 
   // fill in results
   
@@ -971,14 +905,14 @@ void CalledModuleTy::computeCalledAllocators() {
   
   unsigned gcidx = gcFunction->idx;
   for(unsigned i = 0; i < nfuncs; i++) {
-    if (callsMat[i][gcidx]) {
+    if (callsCanReach[i]) {
       const CalledFunctionTy *tgt = getCalledFunction(i);
       allocatingCFunctions->insert(tgt);
       if (!tgt->hasContext()) {
         contextSensitiveAllocatingFunctions->insert(tgt->fun);
       }
     }
-    if (wrapsMat[i][gcidx]) {
+    if (wrapsCanReach[i]) {
       const CalledFunctionTy *tgt = getCalledFunction(i);
       if (!isKnownNonAllocator(tgt)) {
         possibleCAllocators->insert(tgt);
