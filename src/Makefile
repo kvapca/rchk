@@ -119,13 +119,15 @@ SOURCES := $(wildcard *.cpp)
 DEPENDS := $(SOURCES:.cpp=.d)
 OBJECTS := $(SOURCES:.cpp=.o)
 DWOBJECTS := $(SOURCES:.cpp=.dwo)
-SOBJECTS := $(filter-out %check.o, $(OBJECTS))
+SOBJECTS := $(filter-out %check.o cachetest.o, $(OBJECTS))
 
-TOOLS := errcheck symcheck sfpcheck csfpcheck maacheck bcheck ueacheck alloccheck glcheck veccheck cgcheck fficheck
+TOOLS := cachetest errcheck symcheck sfpcheck csfpcheck maacheck bcheck ueacheck alloccheck glcheck veccheck cgcheck fficheck
 
 all: $(TOOLS)
 
 alloccheck: alloccheck.o $(SOBJECTS)
+
+cachetest: cachetest.o $(SOBJECTS)
 
 errcheck: errcheck.o $(SOBJECTS)
 
