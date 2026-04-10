@@ -52,6 +52,8 @@ std::string funLocation(const Function *f);
 std::string instructionAsString(const Instruction *in);
 std::string funName(const Function *f);
 std::string varName(const AllocaInst *var);
+void clearCommonCaches();
+
 
 enum SEXPType {
   RT_NIL = 0,

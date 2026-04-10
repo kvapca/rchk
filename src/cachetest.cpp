@@ -7,6 +7,8 @@
 #include <vector>
 
 // This program tests whether CAllocatorCacheTy correctly serializes and deserializes objects from CalledModuleTy
+// NOTE: As this test recomputes entire analysis, clearCommonCaches() must be called
+//       before each test to clear results from static caches
 
 std::string cacheName = "./src/main/R.bin.cache";
 std::string baseIRFile = "./src/main/R.bin.bc";
@@ -101,6 +103,7 @@ bool compareCalledModules(CalledModuleTy *original, CalledModuleTy *restored) {
 
 // creates cache file for R (without any package)
 void createRCacheFile() {
+  clearCommonCaches();
   int argc = 2;
   const char* argv[] = {execName.c_str(), baseIRFile.c_str()};
 
@@ -120,6 +123,7 @@ void createRCacheFile() {
 
 // checks whether serializing and deserializing R cache works
 void checkR() {
+  clearCommonCaches();
   int argc = 2;
   const char* argv[] = {execName.c_str(), baseIRFile.c_str()};
 
@@ -145,6 +149,7 @@ void checkR() {
 
 // checks whether serializing and deserializing R cache works with survival package
 void checkRWithPackage() {
+  clearCommonCaches();
   int argc = 3;
   const char* argv[] = {execName.c_str(), baseIRFile.c_str(), survivalIRFile.c_str()};
 

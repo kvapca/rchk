@@ -225,17 +225,16 @@ std::string computeVarName(const AllocaInst *var) {
   return "<unnamed var: " + instructionAsString(var) + ">";
 }
 
+static VarNamesTy varNamesCache;
 std::string varName(const AllocaInst *var) {
-
-  static VarNamesTy cache;
   
-  auto vsearch = cache.find(var);
-  if (vsearch != cache.end()) {
+  auto vsearch = varNamesCache.find(var);
+  if (vsearch != varNamesCache.end()) {
     return vsearch->second;
   }
   
   std::string name = computeVarName(var);
-  cache.insert({var, name});
+  varNamesCache.insert({var, name});
   return name;
 }
 
@@ -468,14 +467,15 @@ bool isSEXP(GlobalVariable *gv) {
 
 bool TRVS_DBG = false;
 typedef std::pair<Value*, int> ValueDepthPair;
+static std::map<ValueDepthPair, bool> traverseToSEXPCache;
+
 // checks whether value can be traced to SEXP
 // depth 0 checks for SEXP, depth 1 checks for SEXP*, etc.
 bool traverseToSEXP(Value* start, int depth) {
   if (!start) return false;
 
-  static std::map<ValueDepthPair, bool> cache;
-  auto search = cache.find({start, depth});
-  if (search != cache.end()) {
+  auto search = traverseToSEXPCache.find({start, depth});
+  if (search != traverseToSEXPCache.end()) {
     return search->second;
   }
 
@@ -494,8 +494,8 @@ bool traverseToSEXP(Value* start, int depth) {
     if (!curr->getType()->isPointerTy()) continue;
 
     // check global cache
-    auto cached = cache.find({curr, currDepth});
-    if (cached != cache.end() && cached->second) {
+    auto cached = traverseToSEXPCache.find({curr, currDepth});
+    if (cached != traverseToSEXPCache.end() && cached->second) {
       if (TRVS_DBG) errs() << "Found SEXP source in cache: " << *curr << "\n";
       result = true;
       ended = true;
@@ -565,8 +565,13 @@ bool traverseToSEXP(Value* start, int depth) {
     }
     if (ended) break;
   }
-  cache[{start, depth}] = result;
+  traverseToSEXPCache[{start, depth}] = result;
   return result;
+}
+
+void clearCommonCaches() {
+  varNamesCache.clear();
+  traverseToSEXPCache.clear();
 }
 
 bool isSEXP(AllocaInst* ai) {
