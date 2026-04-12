@@ -60,30 +60,47 @@ void sortFunctionsByName(FunctionsOrderedSetTy& functionsOfInterestSet, Function
 //     from that module (but some tools need to do whole-program analysis
 //     which also will include functions from the base
 //      IR file not included in the module)
-Module *parseArgsReadIR(int argc, char* argv[], FunctionsOrderedSetTy& functionsOfInterestSet, FunctionsVectorTy& functionsOfInterestVector, LLVMContext& context) {
+//
+// all usages above take also an optional [--cache cache_file] argument
+// if provided, the cache file is used to speed up the analysis; see concrete tools for details
+Module *parseArgsReadIR(int argc, char* argv[], FunctionsOrderedSetTy& functionsOfInterestSet, FunctionsVectorTy& functionsOfInterestVector, LLVMContext& context, std::string *cacheFile) {
 
-  if (argc > 3) {
-    errs() << argv[0] << " base_file.bc [module_file.bc]" << "\n";
+  std::vector<std::string> args;
+  for (int i = 0; i < argc; ++i) {
+    if (std::string(argv[i]) == "--cache") {
+      if (i + 1 < argc) {
+        if (cacheFile) *cacheFile = argv[++i];
+      } else {
+        errs() << "ERROR: --cache requires a cache file path" << "\n";
+        exit(1);
+      }
+    } else {
+      args.push_back(argv[i]);
+    }
+  }
+
+  if (args.size() > 3) {
+    errs() << args[0] << " [--cache cache_file] base_file.bc [module_file.bc]" << "\n";
     exit(1);
   }
 
   SMDiagnostic error;
   std::string baseFname;
   
-  if (argc == 1) {
+  if (args.size() == 1) {
     baseFname = "R.bin.bc";  
   } else {
-    baseFname = argv[1];
+    baseFname = args[1];
   }
   
   Module* base = parseIRFile(baseFname, error, context).release();
   if (!base) {
     errs() << "ERROR: Cannot read base IR file " << baseFname << "\n";
-    error.print(argv[0], errs());
+    error.print(args[0].c_str(), errs());
     exit(1);
   }
   
-  if (argc == 1 || argc == 2) {
+  if (args.size() == 1 || args.size() == 2) {
     // only a single input file
     for(Module::iterator f = base->begin(), fe = base->end(); f != fe; ++f) {
       Function *fun = &*f;
@@ -94,11 +111,11 @@ Module *parseArgsReadIR(int argc, char* argv[], FunctionsOrderedSetTy& functions
   }
   
   // have two input files
-  std::string moduleFname = argv[2];
+  std::string moduleFname = args[2];
   std::unique_ptr<Module> module = parseIRFile(moduleFname, error, context);
   if (!module) {
     errs() << "ERROR: Cannot read module IR file " << moduleFname << "\n";
-    error.print(argv[0], errs());
+    error.print(args[0].c_str(), errs());
     exit(1);  
   }
   std::string errorMessage;
