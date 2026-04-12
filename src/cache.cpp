@@ -3,11 +3,6 @@
 #include <fstream>
 #include <sstream>
 
-bool CAllocatorCacheTy::exists() const {
-  std::ifstream infile(file);
-  return infile.good();
-}
-
 // Encoding
 
 std::string CAllocatorCacheTy::encodeFunction(const Function* f) {
@@ -191,7 +186,7 @@ Value* CAllocatorCacheTy::decodeCallInst(StringRef encoded, Module* m) {
 bool CAllocatorCacheTy::deserialize(CalledModuleTy *cm) {
   std::ifstream in(file);
   if (!in) {
-    errs() << "[CACHE] Error opening cache file for reading: " << file << "\n";
+    errs() << "ERROR: Cache file " << file << " failed to load or does not exist.\n";
     return false;
   }
 

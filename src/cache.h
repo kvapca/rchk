@@ -25,10 +25,7 @@ class CAllocatorCacheTy {
 public:
 
   CAllocatorCacheTy(std::string file): file(file) {};
- 
-  // checks if the cache file exists and is readable
-  bool exists() const;
-
+  
   bool serialize(CalledModuleTy *cm);
   bool deserialize(CalledModuleTy *cm);
 };
