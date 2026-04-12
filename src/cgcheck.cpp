@@ -1,3 +1,8 @@
+
+/* 
+  This tool doesn't use the cache.
+*/
+
 #include "common.h"
 
 #include <llvm/Analysis/CallGraph.h>

@@ -5,6 +5,8 @@
   Some of the false alarms can be avoided through simple fixes.
   
   The intended name for this was unescaped-argument-expressions.
+
+  This tool doesn't use the cache.
 */
 
 #include "common.h"

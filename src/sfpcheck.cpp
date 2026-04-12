@@ -4,6 +4,8 @@
   
   By default this ignores error paths, because due to runtime checking,
   pretty much anything then would be a safepoint.
+
+  This tool doesn't use the cache.
 */
 
 #include "common.h"

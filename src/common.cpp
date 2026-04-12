@@ -62,7 +62,7 @@ void sortFunctionsByName(FunctionsOrderedSetTy& functionsOfInterestSet, Function
 //      IR file not included in the module)
 //
 // all usages above take also an optional [--cache cache_file] argument
-// if provided, the cache file is used to speed up the analysis; see concrete tools for details
+// if provided, the cache file is used by some tools to speed up the analysis; see specific tool for details
 Module *parseArgsReadIR(int argc, char* argv[], FunctionsOrderedSetTy& functionsOfInterestSet, FunctionsVectorTy& functionsOfInterestVector, LLVMContext& context, std::string *cacheFile) {
 
   std::vector<std::string> args;
