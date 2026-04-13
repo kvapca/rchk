@@ -95,13 +95,21 @@ find $PKGDIR -name "*.so" | while read SOF ; do
   fi
 done
 
+# ensure cache
+CACHE_FILE=./build/R.bin.cache
+. $RCHK/scripts/ensureCache.sh "$RBC" "$CACHE_FILE"
+if [ $? -ne 0 ] ; then
+  echo "Cache generation failed. Aborting." >&2
+  exit 2
+fi
+
 # run the tools
 
 for T in $TOOLS ; do
   find $PKGDIR -name "*.bc" | grep -v '\.o\.bc' | while read F ; do
     FOUT=`echo $F | sed -e 's/\.bc$/.'$T'/g'`
     if [ ! -r $FOUT ] || [ $F -nt $FOUT ] || [ $RBC -nt $FOUT ] ; then
-      $RCHK/src/$T $RBC $F >$FOUT 2>&1
+      $RCHK/src/$T --cache "$CACHE_FILE" $RBC $F >$FOUT 2>&1
     fi
   done
 done
