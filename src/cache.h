@@ -1,7 +1,9 @@
 #include "callocators.h"
 
+#include <fstream>
+
 class CAllocatorCacheTy {
-  std::string file;
+  const std::string file;
   // cache file format:
   // DONE;callerFunc,arg1,...,argN
   // CALLS;callerFunc,arg1,...,argN;calleeFunc,arg1,...,argN
@@ -26,6 +28,13 @@ public:
 
   CAllocatorCacheTy(std::string file): file(file) {};
   
+  // checks whether the cache file can be opened for writing
+  bool writeable() const {
+    std::ofstream out(file);
+    return out.good();
+  }
   bool serialize(CalledModuleTy *cm);
   bool deserialize(CalledModuleTy *cm);
 };
+
+bool createRCacheFile(std::string baseIRFile, std::string cacheName);

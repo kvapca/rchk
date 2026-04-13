@@ -1,6 +1,5 @@
 #include "cache.h"
 
-#include <fstream>
 #include <sstream>
 
 // Encoding
@@ -267,5 +266,36 @@ bool CAllocatorCacheTy::deserialize(CalledModuleTy *cm) {
   }
 
   cm->setCAllocatorSeedData(std::move(seed));
+  return true;
+}
+
+// Cache generation
+
+// Creates cache file for R (without any package)
+bool createRCacheFile(std::string baseIRFile, std::string cacheName) {
+  errs() << "Creating R cache file\n";
+
+  const char* argv[] = {"cachegen", "--cache", cacheName.c_str(), baseIRFile.c_str()};
+  int argc = sizeof(argv) / sizeof(argv[0]);
+
+  LLVMContext context;
+  FunctionsOrderedSetTy functionsOfInterestSet;
+  FunctionsVectorTy functionsOfInterestVector;
+  std::string cacheFile;
+  Module *m = parseArgsReadIR(argc, const_cast<char**>(argv), functionsOfInterestSet, functionsOfInterestVector, context, &cacheFile);
+
+  CAllocatorCacheTy cache(cacheFile);
+  if (!cache.writeable()) {
+    errs() << "Failed to open cache file for writing: " << cacheFile << "\n";
+    return false;
+  }
+
+  CalledModuleTy *original = CalledModuleTy::create(m);
+  if (cache.serialize(original)) {
+    errs() << "Cache file created: " << cacheFile << "\n";
+  } else {
+    errs() << "Failed to serialize cache to file: " << cacheFile << "\n";
+    return false;
+  }
   return true;
 }

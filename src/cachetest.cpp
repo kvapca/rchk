@@ -101,82 +101,57 @@ bool compareCalledModules(CalledModuleTy *original, CalledModuleTy *restored) {
   return ok;
 }
 
-// creates cache file for R (without any package)
-void createRCacheFile() {
-  clearCommonCaches();
-  int argc = 2;
-  const char* argv[] = {execName.c_str(), baseIRFile.c_str()};
-
-  errs() << "Creating R cache file\n";
-
+void runCheck(int argc, char* argv[]) {
   LLVMContext context;
   FunctionsOrderedSetTy functionsOfInterestSet;
   FunctionsVectorTy functionsOfInterestVector;
-  Module *m = parseArgsReadIR(argc, const_cast<char**>(argv), functionsOfInterestSet, functionsOfInterestVector, context);
-
-  CAllocatorCacheTy cache(cacheName);
-
-  CalledModuleTy *original = CalledModuleTy::create(m);
-  cache.serialize(original);
-  errs() << "Cache file created: " << cacheName << "\n";
-}
-
-// checks whether serializing and deserializing R cache works
-void checkR() {
-  clearCommonCaches();
-  int argc = 2;
-  const char* argv[] = {execName.c_str(), baseIRFile.c_str()};
-
-  errs() << "\nComparing original and restored R cache\n";
-
-  LLVMContext context;
-  FunctionsOrderedSetTy functionsOfInterestSet;
-  FunctionsVectorTy functionsOfInterestVector;
-  Module *m = parseArgsReadIR(argc, const_cast<char**>(argv), functionsOfInterestSet, functionsOfInterestVector, context);
+  std::string cacheFile;
+  Module *m = parseArgsReadIR(argc, argv, functionsOfInterestSet, functionsOfInterestVector, context, &cacheFile);
   
   // create original CalledModuleTy
   CalledModuleTy *original = CalledModuleTy::create(m);
   original->getCallSiteTargets(); // triggers computeCalledAllocators
 
   // restore CalledModuleTy from cache
-  CAllocatorCacheTy cache(cacheName);
+  CAllocatorCacheTy cache(cacheFile);
   CalledModuleTy *restored = CalledModuleTy::create(m);
   cache.deserialize(restored);
 
   errs() << "\n";
   compareCalledModules(original, restored);
+}
+
+// checks whether serializing and deserializing R cache works
+void checkR() {
+  clearCommonCaches();
+  const char* argv[] = {execName.c_str(), "--cache", cacheName.c_str(), baseIRFile.c_str()};
+  int argc = sizeof(argv) / sizeof(argv[0]);
+  errs() << "\nComparing original and restored R cache\n";
+  runCheck(argc, const_cast<char**>(argv));
 }
 
 // checks whether serializing and deserializing R cache works with survival package
-void checkRWithPackage() {
+void checkRWithPackage(std::string packageIRFile) {
   clearCommonCaches();
-  int argc = 3;
-  const char* argv[] = {execName.c_str(), baseIRFile.c_str(), survivalIRFile.c_str()};
-
+  const char* argv[] = {execName.c_str(), "--cache", cacheName.c_str(), baseIRFile.c_str(), packageIRFile.c_str()};
+  int argc = sizeof(argv) / sizeof(argv[0]);
   errs() << "\nComparing original and restored R cache with survival package\n";
+  runCheck(argc, const_cast<char**>(argv));
+}
 
-  LLVMContext context;
-  FunctionsOrderedSetTy functionsOfInterestSet;
-  FunctionsVectorTy functionsOfInterestVector;
-  Module *m = parseArgsReadIR(argc, const_cast<char**>(argv), functionsOfInterestSet, functionsOfInterestVector, context);
-
-  // create original CalledModuleTy
-  CalledModuleTy *original = CalledModuleTy::create(m);
-  original->getCallSiteTargets(); // triggers computeCalledAllocators
-
-  // restore CalledModuleTy from cache
-  CAllocatorCacheTy cache(cacheName);
-  CalledModuleTy *restored = CalledModuleTy::create(m);
-  cache.deserialize(restored);
-
-  errs() << "\n";
-  compareCalledModules(original, restored);
+void malformedArgsCheck() {
+  clearCommonCaches();
+  const char* argv[] = {execName.c_str(), "--cache", cacheName.c_str(), baseIRFile.c_str()};
+  int argc = sizeof(argv) / sizeof(argv[0]);
+  errs() << "\nTesting malformed arguments\n";
+  runCheck(argc, const_cast<char**>(argv));
 }
 
 int main() {
-  createRCacheFile();
+  createRCacheFile(baseIRFile, cacheName);
 
   checkR();
-  checkRWithPackage();
+  checkRWithPackage(survivalIRFile);
+  malformedArgsCheck();
   return 0;
 }
