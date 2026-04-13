@@ -68,8 +68,9 @@ Module *parseArgsReadIR(int argc, char* argv[], FunctionsOrderedSetTy& functions
   std::vector<std::string> args;
   for (int i = 0; i < argc; ++i) {
     if (std::string(argv[i]) == "--cache") {
-      if (i + 1 < argc) {
-        if (cacheFile) *cacheFile = argv[++i];
+      ++i;
+      if (i < argc) {
+        if (cacheFile) *cacheFile = argv[i];
       } else {
         errs() << "ERROR: --cache requires a cache file path" << "\n";
         exit(1);
