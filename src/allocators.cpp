@@ -204,14 +204,14 @@ void findPossibleAllocators(Module *m, FunctionsSetTy& possibleAllocators) {
   }
   
   FunctionsInfoMapTy functionsMap;
-  buildCGClosure(m, functionsMap, true /* ignore error paths */, &onlyFunctions, &onlyEdges, gcFunction /* assume external functions allocate */);
+  buildCGInfo(m, functionsMap, true /* ignore error paths */, &onlyFunctions, &onlyEdges, gcFunction /* assume external functions allocate */);
 
   for(CallEdgesMapTy::iterator cei = onlyEdges.begin(), cee = onlyEdges.end(); cei != cee; ++cei) {
     delete cei->second;
   }
   
   unsigned gcFunctionIndex = getGCFunctionIndex(functionsMap, m);
-  BoolLineTy canReachGC = computeCanReachToIndex(functionsMap, gcFunctionIndex);
+  CanReachVectorTy canReachGC = computeCanReachToIndex(functionsMap, gcFunctionIndex);
 
   for(FunctionsInfoMapTy::iterator fi = functionsMap.begin(), fe = functionsMap.end(); fi != fe; ++fi) {
     Function *f = const_cast<Function *>(fi->second.function);
@@ -225,7 +225,7 @@ void findPossibleAllocators(Module *m, FunctionsSetTy& possibleAllocators) {
   possibleAllocators.insert(gcFunction);
 }
 
-bool isAllocatingFunction(Function *fun, FunctionsInfoMapTy& functionsMap, BoolLineTy& canReachGC) {
+bool isAllocatingFunction(Function *fun, FunctionsInfoMapTy& functionsMap, CanReachVectorTy& canReachGC) {
   if (!fun || isAssertedNonAllocating(fun)) {
     return false;
   }
@@ -251,10 +251,10 @@ void findAllocatingFunctions(Module *m, FunctionsSetTy& allocatingFunctions) {
   }
   
   FunctionsInfoMapTy functionsMap;
-  buildCGClosure(m, functionsMap, true /* ignore error paths */, &onlyFunctions, NULL, getGCFunction(m) /* assume external functions allocate */);
+  buildCGInfo(m, functionsMap, true /* ignore error paths */, &onlyFunctions, NULL, getGCFunction(m) /* assume external functions allocate */);
 
   unsigned gcFunctionIndex = getGCFunctionIndex(functionsMap, m);
-  BoolLineTy canReachGC = computeCanReachToIndex(functionsMap, gcFunctionIndex);
+  CanReachVectorTy canReachGC = computeCanReachToIndex(functionsMap, gcFunctionIndex);
 
   for(FunctionsInfoMapTy::iterator fi = functionsMap.begin(), fe = functionsMap.end(); fi != fe; ++fi) {
     Function *f = const_cast<Function *>(fi->second.function);

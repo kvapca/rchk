@@ -35,14 +35,14 @@ int main(int argc, char* argv[])
   Module *m = parseArgsReadIR(argc, argv, functionsOfInterestSet, functionsOfInterestVector, context);
   
   FunctionsInfoMapTy functionsMap;
-  buildCGClosure(m, functionsMap, true /* ignore error paths */);
+  buildCGInfo(m, functionsMap, true /* ignore error paths */);
   
   unsigned gcFunctionIndex = getGCFunctionIndex(functionsMap, m);
 
   // we want: canReachGoodTarget[f] = exists g: reach(f,g) && reach(g,GC) && !assertedNonAllocating(g)
 
   // compute which functions can reach GC function
-  BoolLineTy canReachGC = computeCanReachToIndex(functionsMap, gcFunctionIndex);
+  CanReachVectorTy canReachGC = computeCanReachToIndex(functionsMap, gcFunctionIndex);
 
   // take only functions that can reach GC and are not asserted non-allocating
   std::vector<unsigned> goodTargets;
@@ -55,7 +55,7 @@ int main(int argc, char* argv[])
     }
   }
   // compute which functions can reach any of the good targets
-  BoolLineTy canReachGoodTarget = computeCanReachToAnyIndex(functionsMap, goodTargets);
+  CanReachVectorTy canReachGoodTarget = computeCanReachToAnyIndex(functionsMap, goodTargets);
   
   errs() << "List of functions and callsites calling (recursively) into " << gcFunction << ":\n";
 

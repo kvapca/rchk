@@ -148,7 +148,7 @@ enum ArgExpKind {
   AK_FRESH         // allocation and possibly returning a fresh object
 };
 
-ArgExpKind classifyArgumentExpression(Value *arg, FunctionsInfoMapTy& functionsMap, BoolLineTy& canReachGC, FunctionsSetTy& possibleAllocators) {
+ArgExpKind classifyArgumentExpression(Value *arg, FunctionsInfoMapTy& functionsMap, CanReachVectorTy& canReachGC, FunctionsSetTy& possibleAllocators) {
 
   if (!CallInst::classof(arg)) {
     // argument does not come (immediatelly) from a call
@@ -213,10 +213,10 @@ int main(int argc, char* argv[])
   Module *m = parseArgsReadIR(argc, argv, functionsOfInterestSet, functionsOfInterestVector, context);  
   
   FunctionsInfoMapTy functionsMap;
-  buildCGClosure(m, functionsMap, true /* ignore error paths */);
+  buildCGInfo(m, functionsMap, true /* ignore error paths */);
   
   unsigned gcFunctionIndex = getGCFunctionIndex(functionsMap, m);
-  BoolLineTy canReachGC = computeCanReachToIndex(functionsMap, gcFunctionIndex);
+  CanReachVectorTy canReachGC = computeCanReachToIndex(functionsMap, gcFunctionIndex);
 
   FunctionsSetTy possibleAllocators;
   findPossibleAllocators(m, possibleAllocators); // FIXME: use context-sensitive (more precise) allocator detection

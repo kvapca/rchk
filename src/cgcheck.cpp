@@ -70,7 +70,7 @@ int main(int argc, char* argv[])
   }
 
   FunctionsInfoMapTy functionsMap;
-  buildCGClosure(m, functionsMap, false /* ignore error paths */, &onlyFunctions, &onlyEdges);
+  buildCGInfo(m, functionsMap, false /* ignore error paths */, &onlyFunctions, &onlyEdges);
   
   for(CallEdgesMapTy::iterator cei = onlyEdges.begin(), cee = onlyEdges.end(); cei != cee; ++cei) {
     delete cei->second;
@@ -84,7 +84,7 @@ int main(int argc, char* argv[])
     exit(1);
   }
   myfindex = fsearch->second.index;  
-  BoolLineTy canReachMyf = computeCanReachToIndex(functionsMap, myfindex);
+  CanReachVectorTy canReachMyf = computeCanReachToIndex(functionsMap, myfindex);
 
   errs() << "Functions calling (recursively) function " << funName(myf) << "\n";
   for(FunctionsVectorTy::iterator FI = functionsOfInterestVector.begin(), FE = functionsOfInterestVector.end(); FI != FE; ++FI) {

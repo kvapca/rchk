@@ -24,8 +24,8 @@ static AdjacencyListTy reverseEdges(const AdjacencyListTy& adjacencyList) {
   return neighbours;
 }
 
-BoolLineTy computeCanReachToAnyIndex(const AdjacencyListTy& adjacencyList, const std::vector<unsigned>& targetIndices) {
-  BoolLineTy canReach(adjacencyList.size(), false);
+CanReachVectorTy computeCanReachToAnyIndex(const AdjacencyListTy& adjacencyList, const std::vector<unsigned>& targetIndices) {
+  CanReachVectorTy canReach(adjacencyList.size(), false);
   AdjacencyListTy neighbours = reverseEdges(adjacencyList);
 
   std::queue<unsigned> q;
@@ -52,8 +52,8 @@ BoolLineTy computeCanReachToAnyIndex(const AdjacencyListTy& adjacencyList, const
   return canReach;
 }
 
-BoolLineTy computeCanReachToAnyIndex(const FunctionsInfoMapTy& functionsMap, const std::vector<unsigned>& targetIndices) {
-  // NOTE: buildCGClosure guarantees that any function in callInfo should have an entry in functionsMap
+CanReachVectorTy computeCanReachToAnyIndex(const FunctionsInfoMapTy& functionsMap, const std::vector<unsigned>& targetIndices) {
+  // NOTE: buildCGInfo guarantees that any function in callInfo should have an entry in functionsMap
   AdjacencyListTy adjacencyList(functionsMap.size() + 1);
 
   for (const auto& [_, finfo] : functionsMap) {
@@ -62,7 +62,7 @@ BoolLineTy computeCanReachToAnyIndex(const FunctionsInfoMapTy& functionsMap, con
     for (const auto& cinfo : finfo.callInfos) {
       if (cinfo.target->index >= adjacencyList.size()) {
         errs() << "Error: function index " << cinfo.target->index << " is out of bounds for adjacency list of size " << adjacencyList.size() << "\n";
-        continue; // should not happen if buildCGClosure is correct
+        continue; // should not happen if buildCGInfo is correct
       }
       callees.push_back(cinfo.target->index);
     }
@@ -71,18 +71,18 @@ BoolLineTy computeCanReachToAnyIndex(const FunctionsInfoMapTy& functionsMap, con
   return computeCanReachToAnyIndex(adjacencyList, targetIndices);
 }
 
-BoolLineTy computeCanReachToIndex(const FunctionsInfoMapTy& functionsMap, unsigned targetIndex) {
+CanReachVectorTy computeCanReachToIndex(const FunctionsInfoMapTy& functionsMap, unsigned targetIndex) {
   return computeCanReachToAnyIndex(functionsMap, {targetIndex});
 }
 
-BoolLineTy computeCanReachToIndex(const AdjacencyListTy& adjacencyList, unsigned targetIndex) {
+CanReachVectorTy computeCanReachToIndex(const AdjacencyListTy& adjacencyList, unsigned targetIndex) {
   return computeCanReachToAnyIndex(adjacencyList, {targetIndex});
 }
 
 // build closure over the callgraph of module m
 // each function from module m gets its FunctionInfo in the functionsMap
 
-void buildCGClosure(Module *m, FunctionsInfoMapTy& functionsMap, bool ignoreErrorPaths, FunctionsSetTy *onlyFunctions, CallEdgesMapTy *onlyEdges, Function* externalFunction) {
+void buildCGInfo(Module *m, FunctionsInfoMapTy& functionsMap, bool ignoreErrorPaths, FunctionsSetTy *onlyFunctions, CallEdgesMapTy *onlyEdges, Function* externalFunction) {
 
   FunctionsSetTy errorFunctions;
   if (ignoreErrorPaths) {
