@@ -1,5 +1,6 @@
 
 #include "callocators.h"
+#include "cgclosure.h"
 #include "errors.h"
 #include "guards.h"
 #include "symbols.h"
@@ -784,43 +785,8 @@ static void getCalledAndWrappedFunctions(const CalledFunctionTy *f, LineMessenge
   }
 }
 
-typedef std::vector<bool> BoolLineTy;
-typedef std::vector<unsigned> AdjacencyListRow;
-typedef std::vector<AdjacencyListRow> AdjacencyListTy;
-
 static void resize(AdjacencyListTy& list, unsigned n) {
   list.resize(n);
-}
-
-// calculates which functions call target function
-// to match previous closure semantics, target is non-reflexive (i.e. target doesn't call itself)
-static BoolLineTy computeCanReach(const AdjacencyListTy& list, unsigned targetIndex) {
-  // list[i] are all functions that get called by function i
-  // lets reverse edges
-  // neighbours[i] are all functions that call function i
-  AdjacencyListTy neighbours(list.size());
-  for(unsigned i = 0; i < list.size(); i++) {
-    for(unsigned j : list[i]) {
-      neighbours[j].push_back(i);
-    }
-  }
-
-  // now we can calculate which functions call targetIndex by running BFS from it
-  BoolLineTy canReach(list.size(), false);
-  std::queue<unsigned> q {{targetIndex}};
-
-  while(!q.empty()) {
-    unsigned i = q.front();
-    q.pop();
-
-    for(unsigned j : neighbours[i]) {
-      if (!canReach[j]) {
-        canReach[j] = true;
-        q.push(j);
-      }
-    }
-  }
-  return canReach;
 }
 
 void CalledModuleTy::computeCalledAllocators() {
@@ -946,8 +912,8 @@ void CalledModuleTy::computeCalledAllocators() {
   }
 
   // calculate canReach for GC function
-  auto callsCanReach = computeCanReach(callsList, gcFunction->idx);
-  auto wrapsCanReach = computeCanReach(wrapsList, gcFunction->idx);
+  auto callsCanReach = computeCanReachToIndex(callsList, gcFunction->idx);
+  auto wrapsCanReach = computeCanReachToIndex(wrapsList, gcFunction->idx);
 
   // fill in results
   
