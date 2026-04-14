@@ -6,9 +6,78 @@
 
 #include <llvm/Support/raw_ostream.h>
 
+#include <queue>
+
 using namespace llvm;
 
 const bool DEBUG = false;
+
+static AdjacencyListTy reverseEdges(const AdjacencyListTy& adjacencyList) {
+  // lets reverse edges
+  // neighbours[i] are all functions that call function i
+  AdjacencyListTy neighbours(adjacencyList.size());
+  for (unsigned i = 0; i < adjacencyList.size(); i++) {
+    for (unsigned j : adjacencyList[i]) {
+      neighbours[j].push_back(i);
+    }
+  }
+  return neighbours;
+}
+
+BoolLineTy computeCanReachToAnyIndex(const AdjacencyListTy& adjacencyList, const std::vector<unsigned>& targetIndices) {
+  BoolLineTy canReach(adjacencyList.size(), false);
+  AdjacencyListTy neighbours = reverseEdges(adjacencyList);
+
+  std::queue<unsigned> q;
+  for (unsigned targetIndex : targetIndices) {
+    if (targetIndex < neighbours.size()) {
+      q.push(targetIndex);
+    }
+    else { // should not happen
+      errs() << "Error: target index " << targetIndex << " is out of bounds for adjacency list of size " << adjacencyList.size() << "\n";
+    }
+  }
+
+  while (!q.empty()) {
+    unsigned i = q.front();
+    q.pop();
+
+    for (unsigned j : neighbours[i]) {
+      if (!canReach[j]) {
+        canReach[j] = true;
+        q.push(j);
+      }
+    }
+  }
+  return canReach;
+}
+
+BoolLineTy computeCanReachToAnyIndex(const FunctionsInfoMapTy& functionsMap, const std::vector<unsigned>& targetIndices) {
+  // NOTE: buildCGClosure guarantees that any function in callInfo should have an entry in functionsMap
+  AdjacencyListTy adjacencyList(functionsMap.size() + 1);
+
+  for (const auto& [_, finfo] : functionsMap) {
+    auto& callees = adjacencyList[finfo.index];
+    callees.reserve(finfo.callInfos.size());
+    for (const auto& cinfo : finfo.callInfos) {
+      if (cinfo.target->index >= adjacencyList.size()) {
+        errs() << "Error: function index " << cinfo.target->index << " is out of bounds for adjacency list of size " << adjacencyList.size() << "\n";
+        continue; // should not happen if buildCGClosure is correct
+      }
+      callees.push_back(cinfo.target->index);
+    }
+  }
+
+  return computeCanReachToAnyIndex(adjacencyList, targetIndices);
+}
+
+BoolLineTy computeCanReachToIndex(const FunctionsInfoMapTy& functionsMap, unsigned targetIndex) {
+  return computeCanReachToAnyIndex(functionsMap, {targetIndex});
+}
+
+BoolLineTy computeCanReachToIndex(const AdjacencyListTy& adjacencyList, unsigned targetIndex) {
+  return computeCanReachToAnyIndex(adjacencyList, {targetIndex});
+}
 
 // build closure over the callgraph of module m
 // each function from module m gets its FunctionInfo in the functionsMap
