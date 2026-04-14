@@ -93,11 +93,7 @@ int main(int argc, char* argv[])
     if (fisearch == functionsMap.end()) continue;
     FunctionInfo& finfo = fisearch->second;
 
-    // temporary sanity check
-    // finfo.callsFunctionMap is only used for myfindex
-    myassert((finfo.callsFunctionMap)[myfindex] == canReachMyf[finfo.index]);
-
-    if ((finfo.callsFunctionMap)[myfindex]) {
+    if (canReachMyf[finfo.index]) {
       errs() << funName(finfo.function) << "\n";
     }
   }

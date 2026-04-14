@@ -74,19 +74,7 @@ int main(int argc, char* argv[])
       const CallInfo& cinfo = *CI;
       const FunctionInfo *middleFinfo = cinfo.target;
 
-      bool old = false;        
-      for(std::vector<FunctionInfo*>::const_iterator TFI = middleFinfo->calledFunctionsList.begin(), TFE = middleFinfo->calledFunctionsList.end(); TFI != TFE; ++TFI) {
-        const FunctionInfo *targetFinfo = *TFI;
-          
-        if ((targetFinfo->callsFunctionMap)[gcFunctionIndex] && !isAssertedNonAllocating(const_cast<Function*>(targetFinfo->function))) {
-          old = true;
-          break;
-        }
-      }
-      // temporary sanity check
-      myassert(old == canReachGoodTarget[middleFinfo->index]);
-
-      if (old) {
+      if (canReachGoodTarget[middleFinfo->index]) {
         annotateLine(sfpLines, cinfo.instruction);
       }
     }

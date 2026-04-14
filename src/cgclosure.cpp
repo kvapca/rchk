@@ -208,70 +208,12 @@ void buildCGClosure(Module *m, FunctionsInfoMapTy& functionsMap, bool ignoreErro
       // create callinfo for this instruction
       
       finfo->callInfos.push_back(CallInfo(callInst, targetFunctionInfo));
-      finfo->calledFunctionsList.push_back(targetFunctionInfo);
       edges++;
       
       if (DEBUG) errs() << " when recording call from " << funName(finfo->function) << " to " << funName(targetFunctionInfo->function) << "\n";
     }
     if (DEBUG) errs() << " mapped function " << funName(finfo->function) << "\n";
   }
-  
-  // fill-in bitmaps of which functions are reachable from which - now we know the number of functions to do that
-  
-  if (DEBUG) errs() << "Allocating bitmaps and registering functions.\n";
-
-  for(FunctionsInfoMapTy::iterator FI = functionsMap.begin(), FE = functionsMap.end(); FI != FE; ++FI) {
-    FunctionInfo& finfo = FI->second;
-    
-    for(std::vector<FunctionInfo*>::iterator TFI = finfo.calledFunctionsList.begin(), TFE = finfo.calledFunctionsList.end(); TFI != TFE; ++TFI) {
-      FunctionInfo *targetFinfo = *TFI;
-          
-      (finfo.callsFunctionMap)[targetFinfo->index] = true; 
-    }
-  }
-  
-  // compute transitive closure
-  // no attempts were made to make this efficient
-  //     
-  // for each function node (function info)
-  //   for each call instruction (call info)
-  //     add targets reachable through 1 intermediate call to this call info
-  //
-  // repeat the above as long as at least one target has actually been added
-  
-  if (DEBUG) errs() << "Calculating transitive closure.\n";
-  int iterations = 0;
-  if (DEBUG) errs() << "The graph has " << functions << " nodes and " << edges << " edges.\n";
-  
-  for(unsigned long addedCalls = ULONG_MAX; addedCalls != 0; iterations++) {
-    addedCalls = 0;
-    unsigned long visitedCalls = 0;
-    unsigned long processedFunctions = 0;    
-    if (DEBUG) errs() << "Iteration " << iterations << "...";
-    for(FunctionsInfoMapTy::iterator FI = functionsMap.begin(), FE = functionsMap.end(); FI != FE; ++FI) {
-      FunctionInfo& finfo = FI->second;
-      processedFunctions++;
-      if (DEBUG && !(processedFunctions % (functions/10))) errs() << "#";
-      
-      std::vector<FunctionInfo*> toadd;
-      
-      for(std::vector<FunctionInfo*>::iterator MFI = finfo.calledFunctionsList.begin(), MFE = finfo.calledFunctionsList.end(); MFI != MFE; ++MFI) {
-        FunctionInfo *middleFinfo = *MFI;
-          
-        for(std::vector<FunctionInfo*>::iterator TFI = middleFinfo->calledFunctionsList.begin(), TFE = middleFinfo->calledFunctionsList.end(); TFI != TFE; ++TFI) {
-          FunctionInfo *targetFinfo = *TFI;
-              
-          if (!(finfo.callsFunctionMap)[targetFinfo->index]) {
-            (finfo.callsFunctionMap)[targetFinfo->index] = true;
-            toadd.push_back(targetFinfo);
-            addedCalls++;
-          }
-        }
-      }
-      
-      finfo.calledFunctionsList.insert(finfo.calledFunctionsList.end(), toadd.begin(), toadd.end());
-    } 
-    if (DEBUG) errs() << " added " << addedCalls << " calls out of " << visitedCalls << " visited calls.\n";
-  }
+  timer.step("building callgraph info");
   delete cg;
 }

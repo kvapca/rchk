@@ -217,11 +217,7 @@ void findPossibleAllocators(Module *m, FunctionsSetTy& possibleAllocators) {
     Function *f = const_cast<Function *>(fi->second.function);
     if (!f) continue;
 
-    // temporary sanity check
-    // finfo.callsFunctionMap is only used for gcFunctionIndex
-    myassert((fi->second.callsFunctionMap)[gcFunctionIndex] == canReachGC[fi->second.index]);
-
-    if ((fi->second.callsFunctionMap)[gcFunctionIndex]) {
+    if (canReachGC[fi->second.index]) {
       possibleAllocators.insert(f);
     }
   }
@@ -229,7 +225,7 @@ void findPossibleAllocators(Module *m, FunctionsSetTy& possibleAllocators) {
   possibleAllocators.insert(gcFunction);
 }
 
-bool isAllocatingFunction(Function *fun, FunctionsInfoMapTy& functionsMap, unsigned gcFunctionIndex) {
+bool isAllocatingFunction(Function *fun, FunctionsInfoMapTy& functionsMap, BoolLineTy& canReachGC) {
   if (!fun || isAssertedNonAllocating(fun)) {
     return false;
   }
@@ -240,7 +236,7 @@ bool isAllocatingFunction(Function *fun, FunctionsInfoMapTy& functionsMap, unsig
   }
   FunctionInfo& finfo = fsearch->second;
 
-  return (finfo.callsFunctionMap)[gcFunctionIndex];
+  return canReachGC[finfo.index];
 }
 
 void findAllocatingFunctions(Module *m, FunctionsSetTy& allocatingFunctions) {
@@ -264,11 +260,7 @@ void findAllocatingFunctions(Module *m, FunctionsSetTy& allocatingFunctions) {
     Function *f = const_cast<Function *>(fi->second.function);
     if (!f) continue;
 
-    // temporary sanity check
-    // finfo.callsFunctionMap is only used for gcFunctionIndex
-    myassert((fi->second.callsFunctionMap)[gcFunctionIndex] == canReachGC[fi->second.index]);
-
-    if ((fi->second.callsFunctionMap)[gcFunctionIndex]) {
+    if (canReachGC[fi->second.index]) {
       allocatingFunctions.insert(f);
     }
   }

@@ -25,12 +25,10 @@ struct CallInfo {
 struct FunctionInfo {  
   const Function* const function;
   std::vector<CallInfo> callInfos;
-  std::vector<bool> callsFunctionMap;
-  std::vector<FunctionInfo*> calledFunctionsList;
   const unsigned index;
   
   public:
-  FunctionInfo(const Function* const f, unsigned long index, unsigned long maxFunctions): function(f), callInfos(), callsFunctionMap(maxFunctions, false), index(index) {};
+  FunctionInfo(const Function* const f, unsigned long index, unsigned long maxFunctions): function(f), callInfos(), index(index) {};
 };
 
 typedef std::map<Function*, FunctionInfo> FunctionsInfoMapTy;
