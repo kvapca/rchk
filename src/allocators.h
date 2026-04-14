@@ -2,7 +2,7 @@
 #define RCHK_ALLOCATORS_H
 
 #include "common.h"
-#include "cgclosure.h"
+#include "cginfo.h"
 
 #include <llvm/IR/Function.h>
 #include <llvm/IR/Module.h>

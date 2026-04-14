@@ -1,6 +1,6 @@
 
 #include "callocators.h"
-#include "cgclosure.h"
+#include "cginfo.h"
 #include "errors.h"
 #include "guards.h"
 #include "symbols.h"

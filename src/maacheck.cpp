@@ -28,7 +28,7 @@
 #include <llvm/Support/raw_ostream.h>
 
 #include "allocators.h"
-#include "cgclosure.h"
+#include "cginfo.h"
 
 using namespace llvm;
 

@@ -1,5 +1,5 @@
 
-#include "cgclosure.h"
+#include "cginfo.h"
 #include "errors.h"
 
 #include <llvm/Analysis/CallGraph.h>
@@ -214,6 +214,5 @@ void buildCGInfo(Module *m, FunctionsInfoMapTy& functionsMap, bool ignoreErrorPa
     }
     if (DEBUG) errs() << " mapped function " << funName(finfo->function) << "\n";
   }
-  timer.step("building callgraph info");
   delete cg;
 }

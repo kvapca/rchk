@@ -15,7 +15,7 @@
 
 #include <llvm/Support/raw_ostream.h>
 
-#include "cgclosure.h"
+#include "cginfo.h"
 
 using namespace llvm;
 
