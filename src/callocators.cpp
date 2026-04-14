@@ -801,8 +801,6 @@ static BoolLineTy computeCanReach(const AdjacencyListTy& list, unsigned targetIn
   AdjacencyListTy neighbours(list.size());
   for(unsigned i = 0; i < list.size(); i++) {
     for(unsigned j : list[i]) {
-      if (j >= neighbours.size()) neighbours.resize(j+1);
-      
       neighbours[j].push_back(i);
     }
   }
