@@ -216,6 +216,13 @@ int main(int argc, char* argv[])
   buildCGClosure(m, functionsMap, true /* ignore error paths */);
   
   unsigned gcFunctionIndex = getGCFunctionIndex(functionsMap, m);
+  BoolLineTy canReachGC = computeCanReachToIndex(functionsMap, gcFunctionIndex);
+
+  // temporary sanity check
+  // finfo.callsFunctionMap is only used for gcFunctionIndex
+  for (auto & [_, finfo] : functionsMap) {
+    myassert((finfo.callsFunctionMap)[gcFunctionIndex] == canReachGC[finfo.index]);
+  }
 
   FunctionsSetTy possibleAllocators;
   findPossibleAllocators(m, possibleAllocators); // FIXME: use context-sensitive (more precise) allocator detection

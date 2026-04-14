@@ -38,6 +38,24 @@ int main(int argc, char* argv[])
   buildCGClosure(m, functionsMap, true /* ignore error paths */);
   
   unsigned gcFunctionIndex = getGCFunctionIndex(functionsMap, m);
+
+  // we want: canReachGoodTarget[f] = exists g: reach(f,g) && reach(g,GC) && !assertedNonAllocating(g)
+
+  // compute which functions can reach GC function
+  BoolLineTy canReachGC = computeCanReachToIndex(functionsMap, gcFunctionIndex);
+
+  // take only functions that can reach GC and are not asserted non-allocating
+  std::vector<unsigned> goodTargets;
+  for (const auto& [_, finfo] : functionsMap) {
+    if (!canReachGC[finfo.index]) {
+      continue;
+    }
+    if (!isAssertedNonAllocating(const_cast<Function*>(finfo.function))) {
+      goodTargets.push_back(finfo.index);
+    }
+  }
+  // compute which functions can reach any of the good targets
+  BoolLineTy canReachGoodTarget = computeCanReachToAnyIndex(functionsMap, goodTargets);
   
   errs() << "List of functions and callsites calling (recursively) into " << gcFunction << ":\n";
 
@@ -55,13 +73,21 @@ int main(int argc, char* argv[])
     for(std::vector<CallInfo>::const_iterator CI = finfo.callInfos.begin(), CE = finfo.callInfos.end(); CI != CE; ++CI) {
       const CallInfo& cinfo = *CI;
       const FunctionInfo *middleFinfo = cinfo.target;
-        
+
+      bool old = false;        
       for(std::vector<FunctionInfo*>::const_iterator TFI = middleFinfo->calledFunctionsList.begin(), TFE = middleFinfo->calledFunctionsList.end(); TFI != TFE; ++TFI) {
         const FunctionInfo *targetFinfo = *TFI;
           
         if ((targetFinfo->callsFunctionMap)[gcFunctionIndex] && !isAssertedNonAllocating(const_cast<Function*>(targetFinfo->function))) {
-          annotateLine(sfpLines, cinfo.instruction);        
+          old = true;
+          break;
         }
+      }
+      // temporary sanity check
+      myassert(old == canReachGoodTarget[middleFinfo->index]);
+
+      if (old) {
+        annotateLine(sfpLines, cinfo.instruction);
       }
     }
   }

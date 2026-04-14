@@ -84,6 +84,7 @@ int main(int argc, char* argv[])
     exit(1);
   }
   myfindex = fsearch->second.index;  
+  BoolLineTy canReachMyf = computeCanReachToIndex(functionsMap, myfindex);
 
   errs() << "Functions calling (recursively) function " << funName(myf) << "\n";
   for(FunctionsVectorTy::iterator FI = functionsOfInterestVector.begin(), FE = functionsOfInterestVector.end(); FI != FE; ++FI) {
@@ -91,6 +92,10 @@ int main(int argc, char* argv[])
     auto fisearch = functionsMap.find(*FI);
     if (fisearch == functionsMap.end()) continue;
     FunctionInfo& finfo = fisearch->second;
+
+    // temporary sanity check
+    // finfo.callsFunctionMap is only used for myfindex
+    myassert((finfo.callsFunctionMap)[myfindex] == canReachMyf[finfo.index]);
 
     if ((finfo.callsFunctionMap)[myfindex]) {
       errs() << funName(finfo.function) << "\n";
