@@ -792,8 +792,9 @@ static void resize(AdjacencyListTy& list, unsigned n) {
   list.resize(n);
 }
 
-// calculates which functions call targedIdx function (targedIdx doesn't call itself)
-static BoolLineTy computeCanReach(const AdjacencyListTy& list, unsigned targedIdx) {
+// calculates which functions call target function
+// to match previous closure semantics, target is non-reflexive (i.e. target doesn't call itself)
+static BoolLineTy computeCanReach(const AdjacencyListTy& list, unsigned targetIndex) {
   // list[i] are all functions that get called by function i
   // lets reverse edges
   // neighbours[i] are all functions that call function i
@@ -806,9 +807,9 @@ static BoolLineTy computeCanReach(const AdjacencyListTy& list, unsigned targedId
     }
   }
 
-  // now we can calculate which functions call targedIdx by running BFS from it
+  // now we can calculate which functions call targetIndex by running BFS from it
   BoolLineTy canReach(list.size(), false);
-  std::queue<unsigned> q {{targedIdx}};
+  std::queue<unsigned> q {{targetIndex}};
 
   while(!q.empty()) {
     unsigned i = q.front();
