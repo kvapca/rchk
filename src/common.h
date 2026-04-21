@@ -106,10 +106,6 @@ struct GlobalsTy {
     GlobalVariable *getSpecialVariable(Module *m, std::string name);
 };
 
-// deprecated
-bool isPointerToStruct(Type* type, std::string name);
-bool isSEXP(Type* type);
-
 bool isPointeeStruct(Type* pointee, std::string name);
 
 bool isGEPSourceSEXP(GetElementPtrInst *gep);
