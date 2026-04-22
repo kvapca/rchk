@@ -1,8 +1,8 @@
 #! /bin/bash
 
-# ensureCache.sh ensures the cache is available and fresh
+# ensure_cache.sh ensures the cache is available and fresh
 # It generates the cache by invoking cachegen if needed.
-# Usage: ensureCache.sh [--fresh] <path-to-RBC-file> <path-to-cache-file>
+# Usage: ensure_cache.sh [--fresh] <path-to-RBC-file> <path-to-cache-file>
 
 if [ ! -r $RCHK/scripts/config.inc ] ; then
   echo "Please set RCHK variables (scripts/config.inc)" >&2

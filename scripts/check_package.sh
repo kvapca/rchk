@@ -97,7 +97,7 @@ done
 
 # ensure cache
 CACHE_FILE=./build/R.bin.cache
-. $RCHK/scripts/ensureCache.sh "$RBC" "$CACHE_FILE"
+. $RCHK/scripts/ensure_cache.sh "$RBC" "$CACHE_FILE"
 if [ $? -ne 0 ] ; then
   echo "Cache generation failed. Aborting." >&2
   exit 2
