@@ -43,21 +43,22 @@ std::string CAllocatorCacheTy::encodeCalledFunction(const CalledFunctionTy *cf) 
 }
 
 std::string CAllocatorCacheTy::encodeCallInst(const Value *callSite) {
-  auto *ci = dyn_cast<CallInst>(callSite);
-  if (!ci) {
-    myassert("CallSite should be a CallInst");
+  auto *cb = dyn_cast<CallBase>(callSite);
+  if (!cb) {
+    myassert("CallSite should be a CallBase");
     return "";
   }
 
-  const Function *f = ci->getParent()->getParent();
+  const Function *f = cb->getParent()->getParent();
+  const BasicBlock *parent = cb->getParent();
   unsigned bbIdx = 0, instIdx = 0;
 
   for (auto &bb : *f) {
-    if (&bb == ci->getParent()) break;
+    if (&bb == parent) break;
     bbIdx++;
   }
-  for (auto &i : *ci->getParent()) {
-    if (&i == ci) break;
+  for (auto &i : *parent) {
+    if (&i == cb) break;
     instIdx++;
   }
 
