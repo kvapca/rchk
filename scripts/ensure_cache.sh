@@ -35,7 +35,7 @@ if [ X"$RBC" == X ] || [ X"$CACHE_FILE" == X ] ; then
   exit 2
 fi
 
-if [ "$FRESH" -eq 1 ] || [ ! -r "$CACHE_FILE" ] || [ "$RBC" -nt "$CACHE_FILE" ] ; then
+if [ "$FRESH" -eq 1 ] || [ ! -r "$CACHE_FILE" ] || [ "$RBC" -nt "$CACHE_FILE" ] || [ "$RCHK/src/cachegen" -nt "$CACHE_FILE" ] ; then
   echo "Regenerating R base cache..."
   $RCHK/src/cachegen "$RBC" "$CACHE_FILE"
   echo $RCHK/src/cachegen "$RBC" "$CACHE_FILE"
