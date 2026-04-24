@@ -264,6 +264,7 @@ DIType *stripQualifiers(DIType *type) {
 bool isSEXP(DIType *type) {
   if (!type) return false;
   type = stripQualifiers(type);
+  if (!type) return false;
 
   // check typedef SEXP
   if (auto *derivedType = dyn_cast<DIDerivedType>(type)){
@@ -271,6 +272,7 @@ bool isSEXP(DIType *type) {
     if (derivedType->getName() != "SEXP") return false;
 
     type = stripQualifiers(derivedType->getBaseType());
+    if (!type) return false;
   }
   else return false;
 
@@ -278,6 +280,7 @@ bool isSEXP(DIType *type) {
   if (auto *derivedType = dyn_cast<DIDerivedType>(type)){
     if (derivedType->getTag() != dwarf::DW_TAG_pointer_type) return false;
     type = stripQualifiers(derivedType->getBaseType());
+    if (!type) return false;
   }
   else return false;
 
@@ -298,11 +301,13 @@ bool isSEXP(DIType *type) {
 bool isSEXPWrapper(DIType *type) {
   if (!type) return false;
   type = stripQualifiers(type);
+  if (!type) return false;
 
   if (auto *derived = dyn_cast<DIDerivedType>(type)) {
     if (derived->getTag() == dwarf::DW_TAG_typedef)
       type = stripQualifiers(derived->getBaseType());
   }
+  if (!type) return false;
 
   if (auto *composite = dyn_cast<DICompositeType>(type)) {
     if (composite->getTag() != dwarf::DW_TAG_structure_type) return false;
