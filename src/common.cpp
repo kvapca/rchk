@@ -1,10 +1,10 @@
 
 #include "common.h"
 
-#include <cxxabi.h>
 #include <vector>
 
 #include <llvm/BinaryFormat/Dwarf.h>
+#include <llvm/Demangle/Demangle.h>
 #include <llvm/IR/BasicBlock.h>
 #include <llvm/IR/DebugInfo.h>
 #include <llvm/IR/Function.h>
@@ -141,17 +141,6 @@ Module *parseArgsReadIR(int argc, char* argv[], FunctionsOrderedSetTy& functions
   return base;
 }
 
-std::string demangle(std::string name) {
-  int status;
-  char *dname = abi::__cxa_demangle(name.c_str(), 0, 0, &status);
-  if (status == 0) {
-    std::string res(dname);
-    return res;
-  } else {
-    return name;
-  }
-}
-
 bool sourceLocation(const Instruction *in, std::string& path, unsigned& line) {
   if (!in) {
     return false;
@@ -209,7 +198,7 @@ std::string funName(const Function *f) {
   if (!f) {
     return "<unknown function>";
   }
-  return demangle(f->getName().str());
+  return llvm::demangle(f->getName().str());
 }
 
 typedef std::map<const AllocaInst*, std::string> VarNamesTy;

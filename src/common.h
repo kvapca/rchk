@@ -46,8 +46,6 @@ typedef std::unordered_map<AllocaInst*,bool,VarBoolCacheTy_hash> VarBoolCacheTy;
 
 Module *parseArgsReadIR(int argc, char* argv[], FunctionsOrderedSetTy& functionsOfInterestSet, FunctionsVectorTy& functionsOfInterestVector, LLVMContext& context);
 
-std::string demangle(std::string name);
-
 bool sourceLocation(const Instruction *in, std::string& path, unsigned& line);
 std::string sourceLocation(const Instruction *in);
 std::string funLocation(const Function *f);
