@@ -10,6 +10,9 @@ FROM ubuntu:22.04
 LABEL maintainer tomas.kalibera@gmail.com
 
 ARG DEBIAN_FRONTEND=noninteractive
+ARG LLVM_VERSION=22
+ARG RCHK_REPO=https://github.com/kvapca/rchk
+ARG RCHK_REF=llvm22
 
 RUN apt-get update && \
   apt-get install -yq --no-install-recommends apt-utils && \
@@ -18,13 +21,27 @@ RUN apt-get update && \
 
 ENV TZ=Europe/Prague
 
-# Install LLVM, R dependencies and common package dependencies
+# Add LLVM package repository
+RUN apt-get update && apt-get install -yq ca-certificates wget && \
+  wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc >/dev/null && \
+  . /etc/os-release && \
+  echo "deb http://apt.llvm.org/${VERSION_CODENAME}/ llvm-toolchain-${VERSION_CODENAME}-${LLVM_VERSION} main" > /etc/apt/sources.list.d/llvm.list && \
+  echo "deb-src http://apt.llvm.org/${VERSION_CODENAME}/ llvm-toolchain-${VERSION_CODENAME}-${LLVM_VERSION} main" >> /etc/apt/sources.list.d/llvm.list && \
+  rm -rf /var/lib/apt/lists/* && \
+  apt autoremove -y
+
+# Install LLVM
 RUN apt-get update && apt-get install -yq \
-      clang llvm-dev '^clang++$' llvm libllvm14 libc++-dev libc++abi-dev make && \
-  apt-get install -yq zip unzip libpaper-utils xdg-utils \
+      clang-${LLVM_VERSION} llvm-${LLVM_VERSION} llvm-${LLVM_VERSION}-dev \
+      libllvm${LLVM_VERSION} libc++-${LLVM_VERSION}-dev libc++abi-${LLVM_VERSION}-dev make && \
+  rm -rf /var/lib/apt/lists/* && \
+  apt autoremove -y
+
+# Install R dependencies and common package dependencies
+RUN apt-get update && apt-get install -yq zip unzip libpaper-utils xdg-utils \
       libbz2-dev libcairo2-dev libcurl4-gnutls-dev libgomp1 libicu70 libjpeg-dev liblzma-dev \
       libpango1.0-dev libpangocairo-1.0-0 libpcre3-dev libpng-dev libreadline-dev tcl8.6-dev \
-      libtiff-dev tk8.6-dev libx11-dev libxt-dev zlib1g-dev ca-certificates file && \
+      libtiff-dev tk8.6-dev libx11-dev libxt-dev zlib1g-dev file && \
   apt-get install -yq libgsl-dev gfortran && \
   rm -rf /var/lib/apt/lists/* && \
   apt autoremove -y
@@ -43,19 +60,22 @@ RUN apt-get update && \
   apt autoremove -y
 
 # config.inc
-ENV WLLVM=/usr/local/bin LLVM=/usr RCHK=/rchk
+ENV LLVM_VERSION=${LLVM_VERSION} \
+  WLLVM=/usr/local/bin \
+  LLVM=/usr/lib/llvm-${LLVM_VERSION} \
+  RCHK=/rchk
 
 # Install rchk
 RUN apt-get update && \
   dpkg --get-selections > /pkgs.sel && \
   apt-get install -yq git && \
-  git clone -b llvm14 https://github.com/kalibera/rchk && \
+  git clone -b ${RCHK_REF} ${RCHK_REPO} rchk && \
   echo "# settings moved to container configuration" > rchk/scripts/config.inc && \
   echo "# settings moved to container configuration" > rchk/scripts/cmpconfig.inc  && \
   cd rchk && \
   git rev-parse HEAD > git_version && \
   cd src && \
-  env CXX=clang++ make -j 4 bcheck maacheck fficheck && \
+  env CXX=clang++-${LLVM_VERSION} LLVM=${LLVM} make -j 4 bcheck maacheck fficheck && \
   rm -f *.o *.dwo *.cpp *.h *d Makefile && \
   cd .. && \
   dpkg --clear-selections && \
@@ -73,9 +93,13 @@ ENV CPICFLAGS="-fPIC" \
   CC=wllvm \
   CXX="wllvm++ -stdlib=libc++" \
   LLVM_COMPILER=clang \
-  LD="clang++ -stdlib=libc++" \
+  LD="clang++-${LLVM_VERSION} -stdlib=libc++" \
   R_LIBS=$RCHK/packages/libs
-  
+
+# set LLVM version for WLLVM
+ENV LLVM_CONFIG_NAME=llvm-config-${LLVM_VERSION} \
+  LLVM_LINKER_NAME=clang++-${LLVM_VERSION}
+
 # Build R using WLLVM and install core dependencies to build R packages
 RUN export WLLVM_BC_STORE="$RCHK/bcstore" && \
   sed -i 's/^# deb-src/deb-src/g' /etc/apt/sources.list && \
@@ -119,7 +143,7 @@ RUN mkdir -p $R_LIBS ${R_LIBSONLY} $PKG_BUILD_DIR && \
   sed -i 's/Defaults[\t]*env_reset/Defaults !env_reset/g' /etc/sudoers && \
   rm -rf /var/lib/apt/lists/*
   
-ENV PATH=$RCHK/scripts:$RCHK/build/bin:$PATH
+ENV PATH=$RCHK/scripts:$RCHK/build/bin:$LLVM/bin:$PATH
 
 WORKDIR /rchk
 
