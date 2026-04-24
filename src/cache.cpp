@@ -1,6 +1,41 @@
 #include "cache.h"
 
+#include <llvm/ADT/SmallString.h>
+#include <llvm/Support/MD5.h>
+
+#include <optional>
 #include <sstream>
+
+// Helper to compute the MD5 hash of the given string. (inspired by LLVM's MD5Hash)
+inline StringRef computeMD5Hash(StringRef Str) {
+
+  MD5 hash;
+  hash.update(Str);
+  MD5::MD5Result result;
+  hash.final(result);
+  return result.digest().str();
+}
+
+std::string CAllocatorCacheTy::functionFingerprint(const Function *f) {
+  if (!f) {
+    return "";
+  }
+
+  std::string location = funLocation(f);
+  return computeMD5Hash(location).str();
+}
+
+bool CAllocatorCacheTy::splitEncodedFunction(StringRef encoded, StringRef &name, StringRef &fingerprint) {
+  SmallVector<StringRef, 2> parts;
+  encoded.split(parts, functionFingerprintDelimiter);
+  if (parts.size() != 2) {
+    return false;
+  }
+
+  name = parts[0];
+  fingerprint = parts[1];
+  return true;
+}
 
 // Encoding
 
@@ -9,7 +44,12 @@ std::string CAllocatorCacheTy::encodeFunction(const Function* f) {
     myassert("Cannot encode NULL function");
     return "";
   }
-  return f->getName().str();
+
+  std::string encoded = f->getName().str();
+  std::string fingerprint = functionFingerprint(f);
+
+  if (fingerprint.empty()) return encoded;
+  return encoded + functionFingerprintDelimiter + fingerprint;
 }
 
 std::string CAllocatorCacheTy::encodeArgInfos(const ArgInfosVectorTy* argInfos) {
@@ -107,8 +147,50 @@ bool CAllocatorCacheTy::serialize(CalledModuleTy *cm) {
 
 // Decoding
 
+void CAllocatorCacheTy::buildFunctionFingerprintMap(Module* m) {
+  if (indexedModule == m || !m) {
+    return;
+  }
+
+  indexedModule = m;
+  functionFingerprintMap.clear();
+
+  for (Function &candidate : *m) {
+    std::string fingerprint = functionFingerprint(&candidate);
+    if (fingerprint.empty()) {
+      continue;
+    }
+    functionFingerprintMap[fingerprint].push_back(&candidate);
+  }
+}
+
 Function* CAllocatorCacheTy::decodeFunction(StringRef encoded, Module* m) {
-  return m->getFunction(encoded);
+  StringRef name;
+  StringRef fingerprint;
+  if (!splitEncodedFunction(encoded, name, fingerprint)) {
+    errs() << "[CACHE] Invalid function encoding: " << encoded << "\n";
+    return nullptr;
+  }
+
+  // try to find the function by name in the module first
+  Function *fce = m->getFunction(name);
+  if (fce && fingerprint == functionFingerprint(fce)) {
+    return fce;
+  }
+
+  // if not found, try to find by fingerprint in the index
+  buildFunctionFingerprintMap(m);
+  auto fsearch = functionFingerprintMap.find(fingerprint.str());
+  if (fsearch == functionFingerprintMap.end()) {
+    return nullptr;
+  }
+  
+  std::vector<Function*> candidates = fsearch->second;
+  if (candidates.size() > 1) {
+    errs() << "[CACHE] Ambiguous function fingerprint for " << encoded << "\n";
+    return nullptr;
+  }
+  return candidates.front();
 }
 
 const ArgInfoTy* CAllocatorCacheTy::decodeArgInfo(StringRef encoded) {
