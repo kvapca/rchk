@@ -7,7 +7,7 @@
 #
 
 FROM ubuntu:22.04
-LABEL maintainer tomas.kalibera@gmail.com
+LABEL maintainer="tomas.kalibera@gmail.com"
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG LLVM_VERSION=22
