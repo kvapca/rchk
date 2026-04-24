@@ -123,7 +123,7 @@ Module *parseArgsReadIR(int argc, char* argv[], FunctionsOrderedSetTy& functions
   }  
   
   
-  if (Linker::linkModules(*base, move(module))) {
+  if (Linker::linkModules(*base, std::move(module))) {
     errs() << "Linking module " << moduleFname << " with base " << baseFname << " resulted in an error.\n";
   }
   
