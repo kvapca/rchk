@@ -5,15 +5,18 @@
 class CAllocatorCacheTy {
   const std::string file;
   // cache file format:
-  // DONE;callerFunc,arg1,...,argN
-  // CALLS;callerFunc,arg1,...,argN;calleeFunc,arg1,...,argN
-  // WRAPS;callerFunc,arg1,...,argN;calleeFunc,arg1,...,argN
-  // CSTARGET;func:bbIdx:instIdx;calledFunc1,args;calledFunc2,args;...
+  // VERSION;<versionNumber>
+  // DONE;<func>
+  // CALLS;<func1>;<func2>
+  // WRAPS;<func1>;<func2>
+  // CSTARGET;<func>:<bbIdx>:<instIdx>;<func1>;<func2>;<func3>;...
 
-  char delimiter = ';';
-  char argDelimiter = ',';
-  char callInstDelimiter = ':';
-
+  static constexpr unsigned formatVersion = 3;
+  
+  static constexpr char delimiter = ';';
+  static constexpr char argDelimiter = ',';
+  static constexpr char callInstDelimiter = ':';
+  static constexpr char functionFingerprintDelimiter = '#';
   std::string encodeFunction(const Function* f);
   std::string encodeArgInfos(const ArgInfosVectorTy* argInfos);
   std::string encodeCalledFunction(const CalledFunctionTy *cf);

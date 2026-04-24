@@ -76,6 +76,8 @@ bool CAllocatorCacheTy::serialize(CalledModuleTy *cm) {
     return false;
   }
 
+  out << "VERSION" << delimiter << formatVersion << "\n";
+
   const CalledModuleTy::CAllocatorSeedDataTy *seed = cm->getCAllocatorSeedData(); // triggers computeCalledAllocators
   if (!seed) {
     errs() << "[CACHE] Missing seed data for serialization\n";
@@ -191,6 +193,7 @@ bool CAllocatorCacheTy::deserialize(CalledModuleTy *cm) {
   }
 
   CalledModuleTy::CAllocatorSeedDataTy *seed = new CalledModuleTy::CAllocatorSeedDataTy(cm);
+  std::optional<int> version;
 
   std::string line;
   while (std::getline(in, line)) {
@@ -205,6 +208,24 @@ bool CAllocatorCacheTy::deserialize(CalledModuleTy *cm) {
     }
 
     StringRef type = parts[0];
+
+    if (!version) {
+      // read version from the first line or return error
+      if (type != "VERSION" || parts.size() != 2) {
+        errs() << "[CACHE] Unsupported cache format in " << file << ", please regenerate the cache.\n";
+        delete seed;
+        return false;
+      }
+
+      int v = 0;
+      if (parts[1].getAsInteger(10, v) || v != formatVersion) {
+        errs() << "[CACHE] Unsupported cache version in " << file << ", please regenerate the cache. Current version is " << formatVersion << "\n";
+        delete seed;
+        return false;
+      }
+      version = v;
+      continue;
+    }
 
     if (type == "DONE") {
       Function* callerFn;
