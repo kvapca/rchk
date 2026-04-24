@@ -96,9 +96,11 @@ ENV CPICFLAGS="-fPIC" \
   LD="clang++-${LLVM_VERSION} -stdlib=libc++" \
   R_LIBS=$RCHK/packages/libs
 
-# set LLVM version for WLLVM
-ENV LLVM_CONFIG_NAME=llvm-config-${LLVM_VERSION} \
-  LLVM_LINKER_NAME=clang++-${LLVM_VERSION}
+# set LLVM tool names for WLLVM
+ENV LLVM_CC_NAME=clang-${LLVM_VERSION} \
+  LLVM_CXX_NAME=clang++-${LLVM_VERSION} \
+  LLVM_LINK_NAME=llvm-link-${LLVM_VERSION} \
+  LLVM_AR_NAME=llvm-ar-${LLVM_VERSION}
 
 # Build R using WLLVM and install core dependencies to build R packages
 RUN export WLLVM_BC_STORE="$RCHK/bcstore" && \
