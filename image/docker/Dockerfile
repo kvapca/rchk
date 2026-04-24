@@ -113,7 +113,7 @@ ENV R_LIBSONLY=$RCHK/packages/libsonly \
 # setup for container.sh
 # sudo is needed to become regular user to match the user running / mounting
 # rchk/packages
-RUN mkdir -p $R_LIBS ${R_LIBSONLY} $PKG_BUILD && \
+RUN mkdir -p $R_LIBS ${R_LIBSONLY} $PKG_BUILD_DIR && \
   apt-get update && \
   apt-get install -yq sudo && \
   sed -i 's/Defaults[\t]*env_reset/Defaults !env_reset/g' /etc/sudoers && \
