@@ -72,8 +72,8 @@ bool isLoadFollowedByGEP(Value *inst, AllocaInst*& var, GetElementPtrInst*& gep)
 
   // return true only when the load is followed by a GEP, which is the case for vector SEXPRECs
   for (auto user : inst->users()) {
-    if (gep = dyn_cast<GetElementPtrInst>(user))
-      return true;
+    gep = dyn_cast<GetElementPtrInst>(user);
+    if (gep) return true;
   }
   return false;
 }
