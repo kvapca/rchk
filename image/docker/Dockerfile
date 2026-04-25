@@ -13,6 +13,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 ARG LLVM_VERSION=22
 ARG RCHK_REPO=https://github.com/kvapca/rchk
 ARG RCHK_REF=llvm22
+ARG R_SVN_REVISION=HEAD
 
 RUN apt-get update && \
   apt-get install -yq --no-install-recommends apt-utils && \
@@ -110,7 +111,7 @@ RUN export WLLVM_BC_STORE="$RCHK/bcstore" && \
   apt-get build-dep -yq r-base && \
   apt-get install -yq subversion && \
   cd rchk && \
-  svn checkout https://svn.r-project.org/R/trunk && \
+  svn checkout --revision "${R_SVN_REVISION}" https://svn.r-project.org/R/trunk trunk && \
   mkdir -p $R_LIBS && \
   mkdir -p $WLLVM_BC_STORE && \
   cd trunk && \
