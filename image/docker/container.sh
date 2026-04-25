@@ -16,19 +16,24 @@
 # /rchk/packages (so that it does not unnecessarily create files owned by
 # /root on the host machine).
 #
-# Checks use an R bitcode cache by default. Set RCHK_NO_CACHE to a non-empty
-# value to run the tools without the cache.
+# Checks use an R bitcode cache by default. Pass --no-cache or set
+# RCHK_NO_CACHE to a non-empty value to run the tools without the cache.
 #
 # (running the checks and printing the outputs is similar to the Singularity
 # container)
 #
 
 if test -z "$1"; then
-  echo "Usage: [--install-deb \"<ubuntu-packages>\"] <package_tarball_full_path>"
-  echo "       [--install-deb \"<ubuntu-packages>\"] <package_name>"
-  echo "       [--install-deb \"<ubuntu-packages>\"] R"
-  echo "       set RCHK_NO_CACHE=1 to disable the R bitcode cache"
+  echo "Usage: [--no-cache] [--install-deb \"<ubuntu-packages>\"] <package_tarball_full_path>"
+  echo "       [--no-cache] [--install-deb \"<ubuntu-packages>\"] <package_name>"
+  echo "       [--no-cache] [--install-deb \"<ubuntu-packages>\"] R"
+  echo "       --no-cache or RCHK_NO_CACHE=1 disables the R bitcode cache"
   exit 1
+fi
+
+if test "$1" = "--no-cache" ; then
+  export RCHK_NO_CACHE=1
+  shift
 fi
 
 CMD=$1
