@@ -16,6 +16,9 @@
 # /rchk/packages (so that it does not unnecessarily create files owned by
 # /root on the host machine).
 #
+# Checks use an R bitcode cache by default. Set RCHK_NO_CACHE to a non-empty
+# value to run the tools without the cache.
+#
 # (running the checks and printing the outputs is similar to the Singularity
 # container)
 #
@@ -24,6 +27,7 @@ if test -z "$1"; then
   echo "Usage: [--install-deb \"<ubuntu-packages>\"] <package_tarball_full_path>"
   echo "       [--install-deb \"<ubuntu-packages>\"] <package_name>"
   echo "       [--install-deb \"<ubuntu-packages>\"] R"
+  echo "       set RCHK_NO_CACHE=1 to disable the R bitcode cache"
   exit 1
 fi
 
@@ -56,7 +60,7 @@ if test "$EFUID" = "0" ; then
   if test "$PKUSER" != "root" ; then
     # re-invoke the script under regular user to do the rest of the
     # work, preserving environment variables
-    sudo -u $PKUSER env "PATH=$PATH" /bin/bash /container.sh "$@"
+    sudo -u $PKUSER env "PATH=$PATH" "RCHK_NO_CACHE=$RCHK_NO_CACHE" /bin/bash /container.sh "$@"
     exit
   fi
 fi
