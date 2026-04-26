@@ -297,7 +297,7 @@ bool isSEXP(DIType *type) {
 }
 
 // Check if type is a struct with exactly one SEXP member
-// as LLVM lowers struct { SEXPREC* } to SEXPREC*
+// as Clang lowers struct { SEXPREC* } to SEXPREC*
 bool isSEXPWrapper(DIType *type) {
   if (!type) return false;
   type = stripQualifiers(type);
