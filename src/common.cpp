@@ -368,9 +368,6 @@ bool isFunctionRetSEXP(Function *fun) {
 Argument* getArgFromDebugVar(DbgVariableRecord *DVR) {
   if (!DVR) return nullptr;
 
-  auto *var = DVR->getVariable();
-  if (!var) return nullptr;
-
   // first try the direct case: argument directly in DVI
   auto *arg = dyn_cast<Argument>(DVR->getVariableLocationOp(0));
   if (arg) return arg;
