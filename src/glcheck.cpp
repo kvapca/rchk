@@ -16,6 +16,7 @@
 
 #include <llvm/Support/raw_ostream.h>
 
+#include <set>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -23,12 +24,34 @@
 
 using namespace llvm;
 
-DICompositeType* resolveForwardDeclaration(DICompositeType* t, Module* m) {
+std::string compositeTypeCacheKey(DICompositeType* t) {
+  if (!t) return "";
+  std::string name = t->getName().str();
+  if (name.empty()) return "";
+  return name + ";" + std::to_string(t->getTag());
+}
+
+// helper struct to compare DICompositeType by file location
+struct DICompositeTypeLocationLess {
+  bool operator()(const DICompositeType* lhs, const DICompositeType* rhs) const {
+    auto *lhsFile = lhs->getFile();
+    auto *rhsFile = rhs->getFile();
+
+    if (lhsFile == rhsFile) return lhs->getLine() < rhs->getLine();
+
+    return std::less<const DIFile*>()(lhsFile, rhsFile);
+  }
+};
+
+typedef std::set<DICompositeType*, DICompositeTypeLocationLess> DICompositeTypeSetTy;
+typedef std::unordered_map<std::string, DICompositeTypeSetTy> DICompositeTypeCacheTy;
+
+const DICompositeTypeSetTy* resolveForwardDeclaration(DICompositeType* t, Module* m) {
   if (!t) return nullptr;
 
   // Cache names and actual composite types on first use for each module.
   static Module* cachedModule = nullptr;
-  static std::unordered_map<std::string, DICompositeType*> cache;
+  static DICompositeTypeCacheTy cache;
   if (cachedModule != m) {
     cachedModule = m;
     cache.clear();
@@ -38,15 +61,18 @@ DICompositeType* resolveForwardDeclaration(DICompositeType* t, Module* m) {
 
     for (auto *type : finder.types()) {
       if (auto *composite = dyn_cast<DICompositeType>(type)) {
+        std::string name = compositeTypeCacheKey(composite);
+        if (name.empty()) continue; // discard anonymous composite types
+
         if (!composite->isForwardDecl()) {
-          cache.emplace(composite->getName().str(), composite);
+          cache[name].insert(composite);
         }
       }
     }
   }
 
-  auto it = cache.find(t->getName().str());
-  return it != cache.end() ? it->second : nullptr;
+  auto it = cache.find(compositeTypeCacheKey(t));
+  return (it != cache.end() && !it->second.empty()) ? &it->second : nullptr;
 }
 
 // return true if there is SEXP somewhere within type t
@@ -67,7 +93,15 @@ bool containsSEXP(DIType *t, DITypeSetTy& visited, Module* m) {
 
   if (auto *composite = dyn_cast<DICompositeType>(t)) {
     if (composite->isForwardDecl()) {
-      return containsSEXP(resolveForwardDeclaration(composite, m), visited, m);
+      const DICompositeTypeSetTy* resolvedTypes = resolveForwardDeclaration(composite, m);
+      if (!resolvedTypes) return false;
+
+      for (auto *resolvedType : *resolvedTypes) {
+        if (containsSEXP(resolvedType, visited, m)) {
+          return true;
+        }
+      }
+      return false;
     }
 
     if (composite->getTag() == dwarf::DW_TAG_array_type)
