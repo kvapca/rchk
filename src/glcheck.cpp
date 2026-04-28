@@ -26,7 +26,7 @@ using namespace llvm;
 DICompositeType* resolveForwardDeclaration(DICompositeType* t, Module* m) {
   if (!t) return nullptr;
 
-  // cache name and actual composite type on first run
+  // Cache names and actual composite types on first use for each module.
   static Module* cachedModule = nullptr;
   static std::unordered_map<std::string, DICompositeType*> cache;
   if (cachedModule != m) {
@@ -39,16 +39,12 @@ DICompositeType* resolveForwardDeclaration(DICompositeType* t, Module* m) {
     for (auto *type : finder.types()) {
       if (auto *composite = dyn_cast<DICompositeType>(type)) {
         if (!composite->isForwardDecl()) {
-          if (composite->getName() == t->getName()) {
-            return composite;
-          }
           cache.emplace(composite->getName().str(), composite);
         }
       }
     }
   }
 
-  // retrieve from cache
   auto it = cache.find(t->getName().str());
   return it != cache.end() ? it->second : nullptr;
 }
