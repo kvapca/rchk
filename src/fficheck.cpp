@@ -147,7 +147,7 @@ bool checkTable(Value *v, bool checkDotCallArity, StringMapTy& smap) {
         return false;
       }
 
-      Function *fun = fun = dyn_cast<Function>(cstr->getAggregateElement(1U));
+      Function *fun = dyn_cast<Function>(cstr->getAggregateElement(1U));
       if (!fun) {
         errs() << "ERROR: invalid function in function table\n";
         return false;
