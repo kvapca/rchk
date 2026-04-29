@@ -88,7 +88,7 @@ bool isVectorOnlyVarOperation(Value *inst, AllocaInst*& var) {
     return true;
   }
   
-  // checks whether the inst if a call to vector functions bellow
+  // checks whether the inst is a call to vector functions bellow
   std::string name;
   if (isCallPassingVar(inst, tvar, name)) {
     if (name == "SET_STRING_ELT" || name == "SET_VECTOR_ELT" || name == "XLENGTH" || name == "LENGTH" ||
