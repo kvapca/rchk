@@ -79,7 +79,7 @@ CanReachVectorTy computeCanReachToIndex(const AdjacencyListTy& adjacencyList, un
   return computeCanReachToAnyIndex(adjacencyList, {targetIndex});
 }
 
-// build closure over the callgraph of module m
+// build information about the callgraph of module m
 // each function from module m gets its FunctionInfo in the functionsMap
 
 void buildCGInfo(Module *m, FunctionsInfoMapTy& functionsMap, bool ignoreErrorPaths, FunctionsSetTy *onlyFunctions, CallEdgesMapTy *onlyEdges, Function* externalFunction) {
