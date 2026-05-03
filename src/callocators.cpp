@@ -10,7 +10,6 @@
 #include "exceptions.h"
 #include "patterns.h"
 
-#include <queue>
 #include <map>
 #include <stack>
 #include <unordered_set>
@@ -793,7 +792,7 @@ void CalledModuleTy::computeCalledAllocators() {
 
   // find calls and variable origins for each called function
   // then create a "callgraph" out of these
-  // and then compute call graph closure
+  // and then compute "can reach" list for GC function
   //
   // for performance, restrict variable origins to possible allocators
   // and restrict calls to possibly allocating functions
