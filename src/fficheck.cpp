@@ -15,10 +15,6 @@
 
 #include <llvm/Support/raw_ostream.h>
 
-#include <unordered_set>
-
-#include "symbols.h"
-
 #include <stdio.h>
 #include <string.h>
 
